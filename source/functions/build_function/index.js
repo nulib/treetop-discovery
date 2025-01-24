@@ -116,39 +116,6 @@ async function copyDirectoryToS3(sourceDir, bucketName, targetPrefix = "") {
 }
 
 /**
- * Send the necessary response to the CloudFormation Custom Resource
- *
- * @param {ResourceEvent} event
- * @param {Context} context
- * @param {ResourceResponse["Status"]} status
- * @param {ResourceResponse["Reason"]} reason - Required: Required if Status is FAILED. It's optional otherwise.
- * @returns {Promise<void>}
- */
-async function sendResponse(event, context, status, reason = "") {
-  /** @type {ResourceResponse} */
-  const response = {
-    Status: status,
-    Reason: reason,
-    PhysicalResourceId: context.logStreamName,
-    StackId: event.StackId,
-    RequestId: event.RequestId,
-    LogicalResourceId: event.LogicalResourceId,
-  };
-
-  const body = JSON.stringify(response);
-
-  try {
-    await fetch(event.ResponseURL, {
-      method: "PUT",
-      body,
-    });
-  } catch (error) {
-    console.error("Failed to send response to CloudFormation:", error);
-    throw error;
-  }
-}
-
-/**
  * Function to fetch and build the UI from the source code
  *
  * @param {ResourceEvent} event
