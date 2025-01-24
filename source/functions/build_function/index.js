@@ -166,13 +166,13 @@ exports.handler = async (event, context) => {
     // Ensure response is sent in order to shut down custom event
     return {
       statusCode: 200,
-      message: "Success",
+      body: JSON.stringify({ status: 'complete' }),
     }
   } catch (error) {
     console.error("Error:", error);
     return {
       statusCode: 500,
-      message: error.message,
+      body: JSON.stringify({ status: 'failure' }),
     };
   }
 };

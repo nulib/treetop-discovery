@@ -7,6 +7,8 @@ from aws_cdk import (
     Fn,
     aws_iam as iam,
     triggers,
+    Duration,
+    Size,
 )
 from constructs import Construct
 
@@ -24,6 +26,10 @@ class OSDPPrototype(Stack):
                 """
                 exports.handler = async function(event) {
                 return {
+                    headers: {
+                        "Access-Control-Allow-Origin" : "*",
+                        "Access-Control-Allow-Credentials" : true
+                    },
                     statusCode: 200,
                     body: JSON.stringify('Hello World!'),
                 };
@@ -81,7 +87,7 @@ class OSDPPrototype(Stack):
         )
 
         # Lambda function to build the UI and deploy to S3
-        build_function = _lambda.Function(
+        build_function = triggers.TriggerFunction(
             self,
             "BuildFunction",
             runtime=_lambda.Runtime.NODEJS_LATEST,
@@ -90,8 +96,19 @@ class OSDPPrototype(Stack):
             environment={
                 "BUCKET_NAME": ui_bucket.bucket_name,
                 "REPO_NAME": "osdp-prototype-ui",
-                "API_URL": my_function_url.url,
-            }
+                "NEXT_PUBLIC_API_URL": my_function_url.url,
+            },
+            timeout=Duration.minutes(5),
+            memory_size=1024,
+            ephemeral_storage_size=Size.gibibytes(1),
+        )
+
+        build_function.add_layers(
+            _lambda.LayerVersion.from_layer_version_arn(
+                self,
+                "GitLayer",
+                layer_version_arn="arn:aws:lambda:us-east-1:553035198032:layer:git-lambda2:8",
+            )
         )
 
         build_function_url = build_function.add_function_url(
@@ -104,8 +121,8 @@ class OSDPPrototype(Stack):
         ui_bucket.grant_read_write(build_function)
 
         # Create trigger
-        triggers.Trigger(
-            self, "BuildTrigger",
-            handler=build_function,
-            execute_after=[ui_bucket]
-        )
+        # triggers.Trigger(
+        #     self, "BuildTrigger",
+        #     handler=build_function,
+        #     execute_after=[ui_bucket, my_function]
+        # )
