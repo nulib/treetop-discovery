@@ -120,9 +120,3 @@ class OSDPPrototype(Stack):
          # Grant Lambda permissions
         ui_bucket.grant_read_write(build_function)
 
-        # Create trigger
-        # triggers.Trigger(
-        #     self, "BuildTrigger",
-        #     handler=build_function,
-        #     execute_after=[ui_bucket, my_function]
-        # )
