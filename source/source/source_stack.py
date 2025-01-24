@@ -17,7 +17,7 @@ class OSDPPrototype(Stack):
 
         # Hello World Function
         my_function = _lambda.Function(
-            self, "HelloWorldFunction", 
+            self, "HelloWorldFunction",
             runtime = _lambda.Runtime.NODEJS_20_X, # Provide any supported Node.js runtime
             handler = "index.handler",
             code = _lambda.Code.from_inline(
@@ -34,7 +34,7 @@ class OSDPPrototype(Stack):
 
         # Define the Lambda function URL resource
         my_function_url = my_function.add_function_url(
-        auth_type = _lambda.FunctionUrlAuthType.NONE,
+            auth_type = _lambda.FunctionUrlAuthType.NONE,
         )
 
         # Define a CloudFormation output for your URL
@@ -86,7 +86,7 @@ class OSDPPrototype(Stack):
             "BuildFunction",
             runtime=_lambda.Runtime.NODEJS_LATEST,
             handler="index.handler",
-            code=_lambda.Code.from_asset("./function/build_function"),
+            code=_lambda.Code.from_asset("./functions/build_function"),
             environment={
                 "BUCKET_NAME": ui_bucket.bucket_name,
                 "REPO_NAME": "osdp-prototype-ui",
