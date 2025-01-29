@@ -30,20 +30,63 @@ class OsdpStepFunctionTaskStack(Stack):
             assumed_by=iam.ServicePrincipal("ecs-tasks.amazonaws.com"),
         )
 
+        task_role.add_to_policy(
+            iam.PolicyStatement(
+                actions=["ecr:GetDownloadUrlForLayer", "ecr:BatchGetImage"],
+                resources=["arn:aws:ecr:us-east-1:625046682746:repository/osdp-iiif-fetcher"],
+            )
+        )
+        
+        task_role.add_to_policy(
+            iam.PolicyStatement(
+                actions=["ecr:GetAuthorizationToken"],
+                resources=["*"],  # This applies to the entire ECR service
+            )
+        )
+
+        # Execution Role for ECS Task
+        execution_role = iam.Role(
+            self,
+            "OsdpExecutionRole",
+            assumed_by=iam.ServicePrincipal("ecs-tasks.amazonaws.com"),
+        )
+
+        execution_role.add_to_policy(
+            iam.PolicyStatement(
+                actions=["ecr:GetAuthorizationToken"],
+                resources=["*"],  # This allows getting auth tokens for ECR
+            )
+        )
+
+        execution_role.add_to_policy(
+            iam.PolicyStatement(
+                actions=["ecr:BatchCheckLayerAvailability", "ecr:GetDownloadUrlForLayer", "ecr:BatchGetImage"],
+                resources=["arn:aws:ecr:us-east-1:625046682746:repository/osdp-iiif-fetcher"],
+            )
+        )
+
+        execution_role.add_to_policy(
+            iam.PolicyStatement(
+                actions=["logs:CreateLogStream", "logs:PutLogEvents"],
+                resources=["*"],  # You can scope this to your log group ARN
+            )
+        )
+
         # Create Task Definition
         task_definition = ecs.FargateTaskDefinition(
             self,
             "OsdpIiifFetcherTaskDef",
             memory_limit_mib=512,
             cpu=256,
-            # task_role=task_role,
+            task_role=task_role,
+            execution_role=execution_role
         )
 
         # Add container to task definition
         container = task_definition.add_container(
             "OsdpIiifFetcherContainer",
             image=ecs.ContainerImage.from_registry(
-                "arn:aws:ecr:us-east-1:625046682746:repository/osdp-iiif-fetcher"
+                "625046682746.dkr.ecr.us-east-1.amazonaws.com/osdp-iiif-fetcher:latest"
             ),
             logging=ecs.LogDriver.aws_logs(
                 stream_prefix="osdp-iiif-fetcher",
