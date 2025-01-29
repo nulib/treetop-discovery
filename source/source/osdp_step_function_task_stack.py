@@ -9,6 +9,9 @@ from aws_cdk import (
     aws_stepfunctions_tasks as sfn_tasks,
     Duration,
     triggers,
+    Fn,
+    aws_s3 as s3,
+    RemovalPolicy,
 )
 import os
 from constructs import Construct
@@ -19,7 +22,25 @@ class OsdpStepFunctionTaskStack(Stack):
     def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
-        # Create VPC 
+        unique_id = Fn.select(2, Fn.split("/", self.stack_id))
+        suffix = Fn.select(4, Fn.split("-", unique_id))
+        bucket_name = Fn.join("-", ["osdp-manifests", suffix])
+
+        bucket = s3.Bucket(
+            self,
+            "ManifestsBucket",
+            bucket_name=bucket_name,
+            block_public_access=s3.BlockPublicAccess(
+                block_public_acls=False,
+                block_public_policy=False,
+                ignore_public_acls=False,
+                restrict_public_buckets=False,
+            ),
+            removal_policy=RemovalPolicy.DESTROY,
+            auto_delete_objects=True,
+        )
+
+        # Create VPC
         vpc = ec2.Vpc(self, "OsdpVpc", max_azs=2)
 
         # Create ECS Cluster
@@ -38,13 +59,15 @@ class OsdpStepFunctionTaskStack(Stack):
                 resources=[ECR_REPO],
             )
         )
-        
+
         task_role.add_to_policy(
             iam.PolicyStatement(
                 actions=["ecr:GetAuthorizationToken"],
                 resources=["*"],  # This applies to the entire ECR service
             )
         )
+
+        bucket.grant_put(task_role)
 
         # Execution Role for ECS Task
         execution_role = iam.Role(
@@ -112,8 +135,8 @@ class OsdpStepFunctionTaskStack(Stack):
             container_overrides=[
                 sfn_tasks.ContainerOverride(
                     container_definition=container,
-                    # Add any environment variables or command overrides 
-                    environment=[{"name": "COLLECTION_URL", "value": os.environ['COLLECTION_URL']}],
+                    # Add any environment variables or command overrides
+                    environment=[{"name": "COLLECTION_URL", "value": os.environ['COLLECTION_URL']}, {"name": "BUCKET_NAME", "value": bucket.bucket_name}],
                     # command=["command", "arg1", "arg2"]
                 )
             ],

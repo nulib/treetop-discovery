@@ -1,6 +1,7 @@
 import os
 import logging
 from loam_iiif.iiif import IIIFClient
+import boto3
 
 logging.basicConfig(
     level=logging.INFO,
@@ -20,13 +21,37 @@ def fetch_collection(url):
         f"Traversal completed. Found {len(manifests)} unique manifests and {len(collections)} collections."
     )
 
+    return manifests
+
 def main():
     url = os.environ.get('COLLECTION_URL')
     if not url:
         logger.error("No COLLECTION_URL environment variable set")
         return
 
-    fetch_collection(url)
+    bucket_name = os.environ.get('BUCKET_NAME')
+    if not bucket_name:
+        logger.error("No BUCKET_NAME environment variable set")
+        return
+
+    manifests_urls = fetch_collection(url)
+    data = '\n'.join(manifests_urls)
+
+    try:
+        s3 = boto3.client('s3')
+
+        respone = s3.put_object(
+            Body=bytes(data, encoding='utf-8'),
+            Bucket=bucket_name,
+            Key="manifests.csv",
+            ContentType='text/csv'
+        )
+        logger.info(f"Uploaded file to S3: {respone}")
+    except Exception as e:
+        logger.error(f"An error occurred uploading file to S3: {e}")
+        raise
+
+
     logger.info("Task completed successfully")
 
 
