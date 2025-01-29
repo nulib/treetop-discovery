@@ -21,12 +21,12 @@ def fetch_collection(url):
     )
 
 def main():
-    # url = os.environ.get('TARGET_URL')
-    # if not url:
-    #     logger.error("No TARGET_URL environment variable set")
-    #     return
+    url = os.environ.get('COLLECTION_URL')
+    if not url:
+        logger.error("No COLLECTION_URL environment variable set")
+        return
 
-    fetch_collection("https://api.dc.library.northwestern.edu/api/v2/collections/819526ed-985c-4f8f-a5c8-631fc400c2f1?as=iiif") # collection with 6 images
+    fetch_collection(url)
     logger.info("Task completed successfully")
 
 

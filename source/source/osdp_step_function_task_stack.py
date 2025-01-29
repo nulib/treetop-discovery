@@ -10,14 +10,16 @@ from aws_cdk import (
     Duration,
     triggers,
 )
+import os
 from constructs import Construct
 
-
+ECR_REPO = "arn:aws:ecr:us-east-1:625046682746:repository/osdp-iiif-fetcher"
+ECR_IMAGE = "625046682746.dkr.ecr.us-east-1.amazonaws.com/osdp-iiif-fetcher:latest"
 class OsdpStepFunctionTaskStack(Stack):
     def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
-        # Create VPC (or use existing one)
+        # Create VPC 
         vpc = ec2.Vpc(self, "OsdpVpc", max_azs=2)
 
         # Create ECS Cluster
@@ -33,7 +35,7 @@ class OsdpStepFunctionTaskStack(Stack):
         task_role.add_to_policy(
             iam.PolicyStatement(
                 actions=["ecr:GetDownloadUrlForLayer", "ecr:BatchGetImage"],
-                resources=["arn:aws:ecr:us-east-1:625046682746:repository/osdp-iiif-fetcher"],
+                resources=[ECR_REPO],
             )
         )
         
@@ -61,7 +63,7 @@ class OsdpStepFunctionTaskStack(Stack):
         execution_role.add_to_policy(
             iam.PolicyStatement(
                 actions=["ecr:BatchCheckLayerAvailability", "ecr:GetDownloadUrlForLayer", "ecr:BatchGetImage"],
-                resources=["arn:aws:ecr:us-east-1:625046682746:repository/osdp-iiif-fetcher"],
+                resources=[ECR_REPO],
             )
         )
 
@@ -86,7 +88,7 @@ class OsdpStepFunctionTaskStack(Stack):
         container = task_definition.add_container(
             "OsdpIiifFetcherContainer",
             image=ecs.ContainerImage.from_registry(
-                "625046682746.dkr.ecr.us-east-1.amazonaws.com/osdp-iiif-fetcher:latest"
+               ECR_IMAGE
             ),
             logging=ecs.LogDriver.aws_logs(
                 stream_prefix="osdp-iiif-fetcher",
@@ -110,8 +112,8 @@ class OsdpStepFunctionTaskStack(Stack):
             container_overrides=[
                 sfn_tasks.ContainerOverride(
                     container_definition=container,
-                    # Add any environment variables or command overrides if needed
-                    # environment=[{"name": "ENV_VAR", "value": "value"}],
+                    # Add any environment variables or command overrides 
+                    environment=[{"name": "COLLECTION_URL", "value": os.environ['COLLECTION_URL']}],
                     # command=["command", "arg1", "arg2"]
                 )
             ],
