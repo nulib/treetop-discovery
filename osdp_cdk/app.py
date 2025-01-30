@@ -3,7 +3,7 @@ import os
 
 import aws_cdk as cdk
 
-from source.osdp_prototype_stack import OsdpPrototypeStack
+from osdp_cdk.osdp_prototype_stack import OsdpPrototypeStack
 
 app = cdk.App()
 OsdpPrototypeStack(

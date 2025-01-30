@@ -1,5 +1,5 @@
 
 # OSDP Prototype
 
- - [CDK Stack](source/README.md)
- - [IIIF manifest fetcher docker image](source/iiif/README.md)
+ - [CDK Stack](osdp_cdk/README.md)
+ - [IIIF manifest fetcher docker image](osdp_cdk/iiif/README.md)
