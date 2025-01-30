@@ -1,0 +1,21 @@
+[tool.ruff]
+# Exclude files/directories
+exclude = [
+    ".git",
+    ".venv",
+    "venv",
+    "__pycache__",
+]
+
+# Same as Black
+line-length = 88
+indent-width = 4
+
+[tool.ruff.lint]
+# Enable specific rule categories
+select = [
+    "E",  # pycodestyle errors
+    "F",  # pyflakes
+    "I",  # isort
+    "B",  # flake8-bugbear
+]
