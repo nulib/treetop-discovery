@@ -1,7 +1,8 @@
-import os
 import logging
-from loam_iiif.iiif import IIIFClient
+import os
+
 import boto3
+from loam_iiif.iiif import IIIFClient
 
 logging.basicConfig(
     level=logging.INFO,
@@ -18,7 +19,7 @@ def fetch_collection(url):
         raise
 
     logger.info(
-        f"Traversal completed. Found {len(manifests)} unique manifests and {len(collections)} collections."
+        f"Found {len(manifests)} manifests and {len(collections)} collections."
     )
 
     return manifests

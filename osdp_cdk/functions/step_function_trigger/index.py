@@ -1,6 +1,7 @@
 def handler(event, context):
-  import boto3
   import os
+
+  import boto3
 
   sfn = boto3.client('stepfunctions')
   sfn.start_execution(

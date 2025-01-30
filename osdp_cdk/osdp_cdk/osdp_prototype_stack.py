@@ -1,22 +1,38 @@
-from aws_cdk import (
-    Stack,
-    aws_ecs as ecs,
-    aws_iam as iam,
-    aws_ec2 as ec2,
-    aws_logs as logs,
-    aws_lambda as _lambda,
-    aws_s3 as s3,
-    aws_stepfunctions as sfn,
-    aws_stepfunctions_tasks as sfn_tasks,
-    Duration,
-    triggers,
-    RemovalPolicy,
-    CfnOutput,
-    RemovalPolicy,
-    Fn,
-    Size,
-)
 import os
+
+from aws_cdk import (
+    CfnOutput,
+    Duration,
+    Fn,
+    RemovalPolicy,
+    Size,
+    Stack,
+    triggers,
+)
+from aws_cdk import (
+    aws_ec2 as ec2,
+)
+from aws_cdk import (
+    aws_ecs as ecs,
+)
+from aws_cdk import (
+    aws_iam as iam,
+)
+from aws_cdk import (
+    aws_lambda as _lambda,
+)
+from aws_cdk import (
+    aws_logs as logs,
+)
+from aws_cdk import (
+    aws_s3 as s3,
+)
+from aws_cdk import (
+    aws_stepfunctions as sfn,
+)
+from aws_cdk import (
+    aws_stepfunctions_tasks as sfn_tasks,
+)
 from constructs import Construct
 
 ECR_REPO = "arn:aws:ecr:us-east-1:625046682746:repository/osdp-iiif-fetcher"
@@ -231,7 +247,7 @@ class OsdpPrototypeStack(Stack):
 
         # First define the success and failure states
         success = sfn.Succeed(self, "TaskCompleted")
-        failure = sfn.Fail(
+        _failure = sfn.Fail(
             self, "TaskFailed", error="TaskFailedError", cause="Task execution failed"
         )
 
