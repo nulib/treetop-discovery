@@ -5,6 +5,7 @@ from aws_cdk import (
     Fn,
     RemovalPolicy,
     Size,
+    Stack,
     triggers,
 )
 from aws_cdk import aws_iam as iam
@@ -22,7 +23,8 @@ class UIConstruct(Construct):
     def __init__(self, scope: Construct, id: str, *, stack_id: str, api_url: str, **kwargs) -> None:
         super().__init__(scope, id)
 
-        ui_bucket_name = Fn.join("-", ["osdp-ui", stack_id])
+        stack = Stack.of(self)
+        ui_bucket_name = Fn.join("-", [stack.stack_name.lower(), "ui", stack_id])
 
         # Create the S3 bucket for the UI
         self.ui_bucket = s3.Bucket(

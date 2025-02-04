@@ -1,8 +1,9 @@
+import hashlib
 import json
 import os
+
 import boto3
 import requests
-import hashlib
 
 BUCKET = os.environ["BUCKET"]
 
