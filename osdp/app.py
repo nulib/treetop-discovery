@@ -1,14 +1,39 @@
 #!/usr/bin/env python3
 import os
+import sys
 
 import aws_cdk as cdk
 
 from stacks.osdp_prototype_stack import OsdpPrototypeStack
 
+# Initialize the CDK app which loads the built-in context (from cdk.json and CLI)
 app = cdk.App()
+
+# All the required context keys
+required_context = ['collection_url']
+
+# Validate that each required context is provided
+for key in required_context:
+    value = app.node.try_get_context(key)
+    if not value:
+        sys.exit(
+            f"Error: Missing required context variable '{key}'. "
+            f"Please pass it via the CLI (e.g., -c {key}=your_value) or define it in cdk.json."
+        )
+
+# Try to get a stack prefix value from the env or CDK context (CLI or cdk.json)
+stack_prefix = os.environ.get("DEV_PREFIX") or app.node.try_get_context("stack_prefix")
+
+if not stack_prefix:
+    print("No stack_prefix found in CDK context. Exiting.")
+    print("Please set using the cli.")
+    print("Example: cdk deploy -c stack_prefix=alice")
+    exit(1)
+
+
 OsdpPrototypeStack(
     app,
-    "OsdpPrototypeStack",
+    f"{stack_prefix}-OSDP-Prototype",
     # If you don't specify 'env', this stack will be environment-agnostic.
     # Account/Region-dependent features and context lookups will not work,
     # but a single synthesized template can be deployed anywhere.

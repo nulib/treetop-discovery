@@ -1,5 +1,3 @@
-import os
-
 from aws_cdk import (
     Fn,
     RemovalPolicy,
@@ -18,14 +16,17 @@ from constructs.ui_construct import UIConstruct
 
 ECR_REPO = "arn:aws:ecr:us-east-1:625046682746:repository/osdp-iiif-fetcher"
 ECR_IMAGE = "625046682746.dkr.ecr.us-east-1.amazonaws.com/osdp-iiif-fetcher:latest"
-COLLECTION_URL = os.getenv("COLLECTION_URL", "https://api.dc.library.northwestern.edu/api/v2/collections/819526ed-985c-4f8f-a5c8-631fc400c2f1?as=iiif")
 
 class OsdpPrototypeStack(Stack):
     def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
-        # Apply tag to all resources in this stack
-        Tags.of(self).add("project", "imls-grant")
+        # Retrieve the 'tags' context value (expected to be a dict)
+        # And apply to all resources in the stack
+        context_tags = self.node.try_get_context("tags")
+        if context_tags and isinstance(context_tags, dict):
+            for key, value in context_tags.items():
+                Tags.of(self).add(key, value)
 
         # Generate unique name logic
         unique_id = Fn.select(2, Fn.split("/", self.stack_id))
@@ -38,7 +39,7 @@ class OsdpPrototypeStack(Stack):
         _ui_construct = UIConstruct(self, "UIConstruct", stack_id=suffix, api_url=api_construct.api_url.url)
 
         # S3 bucket for the IIIF Manifests (and other data)
-        data_bucket_name = Fn.join("-", ["osdp", suffix])
+        data_bucket_name = Fn.join("-", [self.stack_name.lower(), suffix])
 
         data_bucket = s3.Bucket(
             self,
@@ -66,7 +67,7 @@ class OsdpPrototypeStack(Stack):
             "StepFunctionsConstruct",
             ecs_construct=ecs_construct,
             data_bucket=data_bucket,
-            collection_url=COLLECTION_URL
+            collection_url=self.node.try_get_context("collection_url")
         )
 
 

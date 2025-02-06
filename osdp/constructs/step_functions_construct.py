@@ -73,7 +73,7 @@ class StepFunctionsConstruct(Construct):
                     ],
                 }
             ),
-            timeout=Duration.seconds(120),
+            timeout=Duration.minutes(2),
             environment = {
                 "BUCKET": data_bucket.bucket_name
             }
@@ -113,6 +113,8 @@ class StepFunctionsConstruct(Construct):
             principal=iam.ServicePrincipal("states.amazonaws.com"),
         )
 
+        manifest_fetch_concurrency = self.node.try_get_context("manifest_fetch_concurrency") or 2
+
         # Define Distributed Map with ItemReader using a raw JSON state definition
         distributed_map_state = sfn.CustomState(
             self,
@@ -133,15 +135,15 @@ class StepFunctionsConstruct(Construct):
                         "Key.$": "$.s3.Key"  
                     }
                 },
-                "MaxConcurrency": 1,
+                "MaxConcurrency": manifest_fetch_concurrency,
                 "ItemProcessor": {
                     "ProcessorConfig": {
                         "Mode": "DISTRIBUTED",
                         "ExecutionType": "STANDARD"
                     },
-                    "StartAt": "InvokeLambdaProcessor",
+                    "StartAt": "InvokeFetchManifest",
                     "States": {
-                        "InvokeLambdaProcessor": {
+                        "InvokeFetchManifest": {
                             "Type": "Task",
                             "Resource": "arn:aws:states:::lambda:invoke",
                             "Parameters": {
@@ -166,7 +168,7 @@ class StepFunctionsConstruct(Construct):
         self.state_machine = sfn.StateMachine(
             self, "OsdpStackSpinup", 
             definition=definition,
-            timeout=Duration.minutes(15),
+            timeout=Duration.hours(12),
             role=step_functions_role
         )
 
@@ -193,7 +195,7 @@ class StepFunctionsConstruct(Construct):
                 "KEY": "manifests.csv"
             },
             code=_lambda.Code.from_asset("./functions/step_function_trigger"),
-            timeout=Duration.minutes(1),
+            timeout=Duration.minutes(3),
             initial_policy=[
                 iam.PolicyStatement(
                     actions=["states:StartExecution"],

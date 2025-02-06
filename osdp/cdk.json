@@ -15,6 +15,11 @@
     ]
   },
   "context": {
+    "collection_url": "https://api.dc.library.northwestern.edu/api/v2/collections/819526ed-985c-4f8f-a5c8-631fc400c2f1?as=iiif",
+    "manifest_fetch_concurrency": 10,
+    "tags": {
+      "project": "imls-grant"
+    },
     "@aws-cdk/aws-lambda:recognizeLayerVersion": true,
     "@aws-cdk/core:checkSecretUsage": true,
     "@aws-cdk/core:target-partitions": [
