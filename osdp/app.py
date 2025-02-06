@@ -4,6 +4,7 @@ import sys
 
 import aws_cdk as cdk
 
+from pipeline.pipeline_stack import PipelineStack
 from stacks.osdp_prototype_stack import OsdpPrototypeStack
 
 # Initialize the CDK app which loads the built-in context (from cdk.json and CLI)
@@ -45,5 +46,8 @@ OsdpPrototypeStack(
     # want to deploy the stack to. */
     # env=cdk.Environment(account='123456789012', region='us-east-1'),
     # For more information, see https://docs.aws.amazon.com/cdk/latest/guide/environments.html
+)
+PipelineStack(app, "OsdpPipelineStack",
+    env=cdk.Environment(account="625046682746", region="us-east-1")
 )
 app.synth()
