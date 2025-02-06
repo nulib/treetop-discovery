@@ -9,5 +9,5 @@ class OsdpApplicationStage(Stage):
         super().__init__(scope, id, **kwargs)
         OsdpPrototypeStack(
             self,
-            f"{self.node.try_get_context('stack_prefix')}-OSDP-Prototype"
+            "staging-OSDP-Prototype"
         )
