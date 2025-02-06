@@ -30,7 +30,7 @@ $ source .venv/bin/activate
 Install the required dependencies.
 
 ```
-$ pip install -r requirements.txt requirements-dev.txt
+$ $ pip install -r requirements.txt -r requirements-dev.txt
 ```
 
 ### Define context values
