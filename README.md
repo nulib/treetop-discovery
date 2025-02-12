@@ -72,10 +72,20 @@ $ cdk synth
 
 ### Deploy the CDK app
 
-To deploy the stack to AWS. You must first log in to AWS with administrator credentials.
+To deploy the stack to AWS. You must first log in to AWS with administrator credentials using `aws sso login`.
+
+First obtain your stack name. Ex: 
+```bash
+$ cdk ls
+
+yourprefix-OSDP-Prototype #this one is your stack name
+OsdpPipelineStack
+OsdpPipelineStack/staging/OSDP-Prototype (staging-OSDP-Prototype)
+
+Then deploy your stack: 
 
 ```
-$ cdk deploy
+$ cdk deploy yourprefix-OSDP-Prototype
 ``` 
 
 
