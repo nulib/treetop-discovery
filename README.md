@@ -81,6 +81,7 @@ $ cdk ls
 yourprefix-OSDP-Prototype #this one is your stack name
 OsdpPipelineStack
 OsdpPipelineStack/staging/OSDP-Prototype (staging-OSDP-Prototype)
+```
 
 Then deploy your stack: 
 
