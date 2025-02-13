@@ -18,26 +18,26 @@ cd osdp
 To manually create a virtualenv
 
 ```
-$ python3 -m venv .venv
+python3 -m venv .venv
 ```
 
 Aactivate your virtualenv.
 
 ```
-$ source .venv/bin/activate
+source .venv/bin/activate
 ```
 
 Install the required dependencies.
 
 ```
-$ $ pip install -r requirements.txt -r requirements-dev.txt
+pip install -r requirements.txt -r requirements-dev.txt
 ```
 
 ### Define context values
 
 Context values are key-value pairs that can be associated with an app, stack, or construct. They may be supplied in the `cdk.json` or or on the command line.
 
-Since the `cdk.json` file is generally committed to source control, it should generally be used for values shared with the team. Anything that needs to be overriden with specific deploys should be supplied on theh command line. 
+Since the `cdk.json` file is generally committed to source control, it should generally be used for values shared with the team. Anything that needs to be overriden with specific deploys should be supplied on theh command line.
 
 #### Required context values
 
@@ -46,18 +46,18 @@ Since the `cdk.json` file is generally committed to source control, it should ge
 
 #### Optional context values
 
-- `tags` (dict) - Key value pair tags applied to all resources in the stack. Example: 
+- `tags` (dict) - Key value pair tags applied to all resources in the stack. Example:
 ```
 "tags": {
       "project": "chatbot"
     },
 ```
-- `manifest_fetch_url` (str) - The concurrency to use when retrieving IIIF manifests from your API. If not provided, the default will be used (2). 
+- `manifest_fetch_url` (str) - The concurrency to use when retrieving IIIF manifests from your API. If not provided, the default will be used (2).
 
 
 #### Providing context values on the command line
 
-Example: 
+Example:
 ```
 cdk deploy -c stack_prefix=alice
 ```
@@ -67,27 +67,27 @@ cdk deploy -c stack_prefix=alice
 Synthesize the CloudFormation template for this code (login to AWS account first). You must first log in to AWS with administrator credentials.
 
 ```
-$ cdk synth
+cdk synth
 ```
 
 ### Deploy the CDK app
 
 To deploy the stack to AWS. You must first log in to AWS with administrator credentials using `aws sso login`.
 
-First obtain your stack name. Ex: 
+First obtain your stack name. Ex:
 ```bash
-$ cdk ls
+cdk ls
 
 yourprefix-OSDP-Prototype #this one is your stack name
 OsdpPipelineStack
 OsdpPipelineStack/staging/OSDP-Prototype (staging-OSDP-Prototype)
 ```
 
-Then deploy your stack: 
+Then deploy your stack:
 
 ```
-$ cdk deploy yourprefix-OSDP-Prototype
-``` 
+cdk deploy yourprefix-OSDP-Prototype
+```
 
 
 ### Testing
@@ -95,19 +95,19 @@ $ cdk deploy yourprefix-OSDP-Prototype
 To run the tests.
 
 ```
-$ pytest
+pytest
 ```
 
-### Style 
+### Style
 
 ```
-$ ruff check .
+ruff check .
 ```
 
-or 
+or
 
 ```
-$ ruff check --fix .
+ruff check --fix .
 ```
 
 To add additional dependencies, for example other CDK libraries, just add

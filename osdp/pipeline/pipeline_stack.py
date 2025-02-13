@@ -12,7 +12,7 @@ class PipelineStack(cdk.Stack):
 
         # Define the CodePipeline source
         source = pipelines.CodePipelineSource.git_hub(
-            "nulib/osdp-prototype-cdk",  
+            "nulib/osdp-prototype-cdk",
             "main",
             authentication=SecretValue.secrets_manager("osdp/github-token"),
         )
@@ -37,6 +37,29 @@ class PipelineStack(cdk.Stack):
             self, "OsdpPipeline",
             synth=synth,
         )
+
+        validation_wave = pipeline.add_wave("Validation")
+
+        validation_wave.add_pre(pipelines.ShellStep(
+            "FormatCheck",
+            input=source,
+            commands=[
+                "cd osdp",
+                "pip install -r requirements-dev.txt",
+                "ruff check --output-format=github ."
+            ]
+        ))
+
+        validation_wave.add_pre(pipelines.ShellStep(
+            "Test",
+            input=source,
+            commands=[
+                "cd osdp",
+                "pip install -r requirements.txt -r requirements-dev.txt",
+                "pytest -v tests/"
+            ]
+        ))
+
 
         # Define the application stages
         deploy_stage = OsdpApplicationStage(self, "staging", env=cdk.Environment(
