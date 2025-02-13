@@ -57,6 +57,11 @@ class PipelineStack(cdk.Stack):
                 "cd osdp",
                 "pip install -r requirements.txt -r requirements-dev.txt",
                 "npm install -g aws-cdk", # tests are in Python, but rely on cdk cli being available
+                "nvm install --lts", # use the same as the build trigger function
+                "nvm use --lts",
+                "node --version",
+                "npm --version",
+                "cdk --version",
                 "pytest -v tests/"
             ]
         ))
