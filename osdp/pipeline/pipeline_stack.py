@@ -36,8 +36,6 @@ class PipelineStack(cdk.Stack):
         pipeline = pipelines.CodePipeline(
             self, "OsdpPipeline",
             synth=synth,
-            docker_enabled_for_synth=True,
-            docker_enabled_for_self_mutation=True
         )
 
         validation_wave = pipeline.add_wave("Validation")
@@ -57,9 +55,13 @@ class PipelineStack(cdk.Stack):
             input=source,
             commands=[
                 "cd osdp",
+                "ls -la",
+                "ls -la functions/build_function",
+                "ls -la functions/get_iiif_manifest",
+                "ls -la ./functions/get_iiif_manifest",
                 "pip install -r requirements.txt -r requirements-dev.txt",
                 "npm install -g aws-cdk",
-                "pytest -v tests/"
+                "pytest -vv tests/"
             ],
         ))
 
