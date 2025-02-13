@@ -36,7 +36,8 @@ class PipelineStack(cdk.Stack):
         pipeline = pipelines.CodePipeline(
             self, "OsdpPipeline",
             synth=synth,
-            docker_enabled_for_synth=True
+            docker_enabled_for_synth=True,
+            docker_enabled_for_self_mutation=True
         )
 
         validation_wave = pipeline.add_wave("Validation")
