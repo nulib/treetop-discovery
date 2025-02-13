@@ -56,6 +56,7 @@ class PipelineStack(cdk.Stack):
             commands=[
                 "cd osdp",
                 "pip install -r requirements.txt -r requirements-dev.txt",
+                "npm install -g aws-cdk", # tests are in Python, but rely on cdk cli being available
                 "pytest -v tests/"
             ]
         ))
