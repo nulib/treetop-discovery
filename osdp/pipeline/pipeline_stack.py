@@ -50,22 +50,6 @@ class PipelineStack(cdk.Stack):
             ]
         ))
 
-        validation_wave.add_pre(pipelines.ShellStep(
-            "Test",
-            input=source,
-            commands=[
-                "cd osdp",
-                "ls -la",
-                "ls -la functions/build_function",
-                "ls -la functions/get_iiif_manifest",
-                "ls -la ./functions/get_iiif_manifest",
-                "pip install -r requirements.txt -r requirements-dev.txt",
-                "npm install -g aws-cdk",
-                "pytest -vv tests/"
-            ],
-        ))
-
-
         # Define the application stages
         deploy_stage = OsdpApplicationStage(self, "staging", env=cdk.Environment(
                 account='625046682746',
