@@ -98,7 +98,7 @@ To run the tests.
 pytest
 ```
 
-### Style
+### Linting
 
 ```
 ruff check .
@@ -108,6 +108,14 @@ or
 
 ```
 ruff check --fix .
+```
+
+### Stlye
+
+To run formatting
+
+```
+ruff format .
 ```
 
 To add additional dependencies, for example other CDK libraries, just add

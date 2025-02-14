@@ -76,11 +76,11 @@ class EcsConstruct(Construct):
         self.execution_role.add_to_policy(
             iam.PolicyStatement(
                 actions=["logs:CreateLogStream", "logs:PutLogEvents"],
-                resources=["*"],  
+                resources=["*"],
             )
         )
 
-         # Create Task Definition
+        # Create Task Definition
         self.task_definition = ecs.FargateTaskDefinition(
             self,
             "OsdpIiifFetcherTaskDef",

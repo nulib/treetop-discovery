@@ -15,10 +15,11 @@ class ApiConstruct(Construct):
         # Hello World Function
         # This is a standin for our API at the moment
         my_function = _lambda.Function(
-            self, "HelloWorldFunction",
-            runtime = _lambda.Runtime.NODEJS_20_X, # Provide any supported Node.js runtime
-            handler = "index.handler",
-            code = _lambda.Code.from_inline(
+            self,
+            "HelloWorldFunction",
+            runtime=_lambda.Runtime.NODEJS_20_X,  # Provide any supported Node.js runtime
+            handler="index.handler",
+            code=_lambda.Code.from_inline(
                 """
                 exports.handler = async function(event) {
                 return {
@@ -34,10 +35,9 @@ class ApiConstruct(Construct):
             ),
         )
 
-
         # Define the Lambda function URL resource
         self.api_url = my_function.add_function_url(
-            auth_type = _lambda.FunctionUrlAuthType.NONE,
+            auth_type=_lambda.FunctionUrlAuthType.NONE,
         )
 
         # Define a CloudFormation output for your URL

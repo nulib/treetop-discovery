@@ -17,6 +17,7 @@ from constructs.ui_construct import UIConstruct
 ECR_REPO = "arn:aws:ecr:us-east-1:625046682746:repository/osdp-iiif-fetcher"
 ECR_IMAGE = "625046682746.dkr.ecr.us-east-1.amazonaws.com/osdp-iiif-fetcher:latest"
 
+
 class OsdpPrototypeStack(Stack):
     def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
@@ -56,10 +57,8 @@ class OsdpPrototypeStack(Stack):
         )
         # Instantiate the ECS construct
         ecs_construct = EcsConstruct(
-            self, "EcsConstruct", 
-            data_bucket=data_bucket, 
-            ecr_repo=ECR_REPO, 
-            ecr_image=ECR_IMAGE)
+            self, "EcsConstruct", data_bucket=data_bucket, ecr_repo=ECR_REPO, ecr_image=ECR_IMAGE
+        )
 
         # Instantiate the Step Functions construct
         _step_functions_construct = StepFunctionsConstruct(
@@ -67,7 +66,5 @@ class OsdpPrototypeStack(Stack):
             "StepFunctionsConstruct",
             ecs_construct=ecs_construct,
             data_bucket=data_bucket,
-            collection_url=self.node.try_get_context("collection_url")
+            collection_url=self.node.try_get_context("collection_url"),
         )
-
-
