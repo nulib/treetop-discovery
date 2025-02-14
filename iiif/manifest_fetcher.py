@@ -4,11 +4,9 @@ import os
 import boto3
 from loam_iiif.iiif import IIIFClient
 
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s'
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
+
 
 def fetch_collection(url):
     try:
@@ -18,40 +16,38 @@ def fetch_collection(url):
         logger.error(f"An error occurred: {e}")
         raise
 
-    logger.info(
-        f"Found {len(manifests)} manifests and {len(collections)} collections."
-    )
+    logger.info(f"Found {len(manifests)} manifests and {len(collections)} collections.")
 
     return manifests
 
+
 def main():
-    url = os.environ.get('COLLECTION_URL')
+    url = os.environ.get("COLLECTION_URL")
     if not url:
         logger.error("No COLLECTION_URL environment variable set")
         return
 
-    bucket_name = os.environ.get('BUCKET_NAME')
+    bucket_name = os.environ.get("BUCKET_NAME")
     if not bucket_name:
         logger.error("No BUCKET_NAME environment variable set")
         return
 
     manifests_urls = fetch_collection(url)
-    data = '\n'.join(manifests_urls)
+    data = "\n".join(manifests_urls)
 
     try:
-        s3 = boto3.client('s3')
+        s3 = boto3.client("s3")
 
         respone = s3.put_object(
-            Body=bytes(data, encoding='utf-8'),
+            Body=bytes(data, encoding="utf-8"),
             Bucket=bucket_name,
             Key="manifests.csv",
-            ContentType='text/csv'
+            ContentType="text/csv",
         )
         logger.info(f"Uploaded file to S3: {respone}")
     except Exception as e:
         logger.error(f"An error occurred uploading file to S3: {e}")
         raise
-
 
     logger.info("Task completed successfully")
 

@@ -11,7 +11,7 @@ from stacks.osdp_prototype_stack import OsdpPrototypeStack
 app = cdk.App()
 
 # All the required context keys
-required_context = ["collection_url"]
+required_context = ["collection_url", "embedding_model_arn"]
 
 # Validate that each required context is provided
 for key in required_context:
@@ -35,6 +35,7 @@ if not stack_prefix:
 OsdpPrototypeStack(
     app,
     f"{stack_prefix}-OSDP-Prototype",
+    stack_prefix=stack_prefix,
     # If you don't specify 'env', this stack will be environment-agnostic.
     # Account/Region-dependent features and context lookups will not work,
     # but a single synthesized template can be deployed anywhere.
@@ -46,5 +47,7 @@ OsdpPrototypeStack(
     # env=cdk.Environment(account='123456789012', region='us-east-1'),
     # For more information, see https://docs.aws.amazon.com/cdk/latest/guide/environments.html
 )
-PipelineStack(app, "OsdpPipelineStack", env=cdk.Environment(account="625046682746", region="us-east-1"))
+PipelineStack(
+    app, "OsdpPipelineStack", stack_prefix="staging", env=cdk.Environment(account="625046682746", region="us-east-1")
+)
 app.synth()
