@@ -44,19 +44,6 @@ class OsdpPrototypeStack(Stack):
         unique_id = Fn.select(2, Fn.split("/", self.stack_id))
         suffix = Fn.select(4, Fn.split("-", unique_id))
 
-        # Create the API
-        self.api_construct = ApiConstruct(self, "ApiConstruct")
-
-        # Create the UI
-        self.ui_construct = UIConstruct(
-            self,
-            "UIConstruct",
-            stack_id=suffix,
-            api_url=self.api_construct.api_url.url,
-            auth_context=AmplifyAuthContext(self),
-            function_invoker_principal=ui_function_invoke_principal,
-        )
-
         # S3 bucket for the IIIF Manifests (and other data)
         data_bucket_name = Fn.join("-", [self.stack_name.lower(), suffix])
 
@@ -73,23 +60,15 @@ class OsdpPrototypeStack(Stack):
             removal_policy=RemovalPolicy.DESTROY,
             auto_delete_objects=True,
         )
+
         # Instantiate the ECS construct
         ecs_construct = EcsConstruct(self, "EcsConstruct", data_bucket=data_bucket, ecr_image=ECR_IMAGE)
-
-        # Instantiate the Step Functions construct
-        step_functions_construct = StepFunctionsConstruct(
-            self,
-            "StepFunctionsConstruct",
-            ecs_construct=ecs_construct,
-            data_bucket=data_bucket,
-            collection_url=self.node.try_get_context("collection_url"),
-        )
 
         # Database construct
         database_construct = DatabaseConstruct(self, "DatabaseConstruct")
 
         # Knowledge Base construct
-        _knowledge_base_construct = KnowledgeBaseConstruct(
+        knowledge_base_construct = KnowledgeBaseConstruct(
             self,
             "KnowledgeBaseConstruct",
             data_bucket=data_bucket,
@@ -97,6 +76,38 @@ class OsdpPrototypeStack(Stack):
             db_cluster=database_construct.db_cluster,
             db_credentials=database_construct.db_credentials,
             stack_prefix=stack_prefix,
-            step_function_trigger=step_functions_construct.step_function_trigger,
             db_initialization=database_construct.db_init3_index,
+        )
+
+        # Create the API
+        self.api_construct = ApiConstruct(
+            self,
+            "ApiConstruct",
+            knowledge_base=knowledge_base_construct.knowledge_base,
+            stack_prefix=stack_prefix,
+            model_arn=self.node.try_get_context("foundation_model_arn"),
+        )
+
+        # Create the UI
+        self.ui_construct = UIConstruct(
+            self,
+            "UIConstruct",
+            stack_id=suffix,
+            api_url=self.api_construct.api.url,
+            auth_context=AmplifyAuthContext(self),
+            function_invoker_principal=ui_function_invoke_principal,
+        )
+
+        # Instantiate the Step Functions construct
+        _step_functions_construct = StepFunctionsConstruct(
+            self,
+            "StepFunctionsConstruct",
+            ecs_construct=ecs_construct,
+            data_bucket=data_bucket,
+            collection_url=self.node.try_get_context("collection_url"),
+            knowledge_base=knowledge_base_construct.knowledge_base,  # Pass the actual construct
+            data_source=knowledge_base_construct.s3_data_source,  # If you expose this
+            db_cluster=database_construct.db_cluster,  # Pass DB cluster
+            knowledge_base_id=knowledge_base_construct.knowledge_base_id,
+            data_source_id=knowledge_base_construct.data_source_id,
         )

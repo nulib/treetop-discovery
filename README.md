@@ -71,9 +71,10 @@ Since the `cdk.json` file is generally committed to source control, it should ge
 
 #### Required context values
 
-- `stack_prefix` (str) - will be appended to the beginning of the CloudFormation stack on deploy. (*For NU devs this is not required, it will use the `DEV_PREFIX` env var in AWS.)
+- `stack_prefix` (str) - will be appended to the beginning of the CloudFormation stack on deploy. (*For NU devs this is not needed, it will use the `DEV_PREFIX` env var in AWS.)
 - `collection_url` (str)- the url of the IIIF collection to load during deployment. There is a small collection (6 items) in the `cdk.json` file, but you will want to change or override on the command line.
 - `embedding_model_arn` (str) - Embedding model to use for Bedrock Knowledgebase
+- `foundation_model_arn` (str) - Foundation model to use for Bedrock RetreiveAndGenerate invocations
 
 #### Optional context values
 

@@ -156,7 +156,7 @@ class UIConstruct(Construct):
                 "AMPLIFY_APP_ID": self.amplify_app.app_id,
                 "AMPLIFY_BRANCH_NAME": app_branch_name,
             },
-            timeout=Duration.minutes(5),  # TODO: Build times are nearing this limit
+            timeout=Duration.minutes(10),
             memory_size=1024,
             ephemeral_storage_size=Size.gibibytes(1),
             initial_policy=[
@@ -168,6 +168,7 @@ class UIConstruct(Construct):
                     ],
                 )
             ],
+            execute_on_handler_change=False,
         )
 
         # Add the Git layer to the build function
