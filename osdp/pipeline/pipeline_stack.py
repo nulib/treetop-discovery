@@ -27,33 +27,51 @@ class PipelineStack(cdk.Stack):
                 "pip install -r requirements.txt -r requirements-dev.txt",
                 "npm install -g aws-cdk",
                 "cdk --version",
-                "cdk synth -c stack_prefix=staging"
+                "cdk synth -c stack_prefix=staging",
             ],
-        primary_output_directory="osdp/cdk.out"
+            primary_output_directory="osdp/cdk.out",
         )
 
         # Define the CodePipeline using CDK Pipelines
         pipeline = pipelines.CodePipeline(
-            self, "OsdpPipeline",
+            self,
+            "OsdpPipeline",
             synth=synth,
         )
 
         validation_wave = pipeline.add_wave("Validation")
 
-        validation_wave.add_pre(pipelines.ShellStep(
-            "FormatCheck",
-            input=source,
-            commands=[
-                "cd osdp",
-                "pip install -r requirements-dev.txt",
-                "ruff check --output-format=github ."
-            ]
-        ))
+        validation_wave.add_pre(
+            pipelines.ShellStep(
+                "Lint",
+                input=source,
+                commands=["cd osdp", "pip install -r requirements-dev.txt", "ruff check ."],
+            )
+        )
+
+        validation_wave.add_pre(
+            pipelines.ShellStep(
+                "Style",
+                input=source,
+                commands=["cd osdp", "pip install -r requirements-dev.txt", "ruff format --check ."],
+            )
+        )
+
+        validation_wave.add_pre(
+            pipelines.ShellStep(
+                "Test",
+                input=source,
+                commands=[
+                    "cd osdp",
+                    "pip install -r requirements.txt -r requirements-dev.txt",
+                    "npm install -g aws-cdk",
+                    "pytest -vv tests/",
+                ],
+            )
+        )
 
         # Define the application stages
-        deploy_stage = OsdpApplicationStage(self, "staging", env=cdk.Environment(
-                account='625046682746',
-                region='us-east-1'
-            ))
+        deploy_stage = OsdpApplicationStage(
+            self, "staging", env=cdk.Environment(account="625046682746", region="us-east-1")
+        )
         pipeline.add_stage(deploy_stage)
-
