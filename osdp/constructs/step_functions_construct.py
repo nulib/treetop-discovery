@@ -23,7 +23,20 @@ from constructs import Construct
 
 
 class StepFunctionsConstruct(Construct):
-    def __init__(self, scope: Construct, id: str, *, ecs_construct, data_bucket, collection_url, **kwargs) -> None:
+    def __init__(
+        self,
+        scope: Construct,
+        id: str,
+        *,
+        ecs_construct,
+        data_bucket,
+        collection_url,
+        knowledge_base=None,
+        data_source=None,
+        knowledge_base_id=None,
+        data_source_id=None,
+        **kwargs,
+    ) -> None:
         super().__init__(scope, id)
 
         # Create the ECS Run Task state
@@ -102,6 +115,16 @@ class StepFunctionsConstruct(Construct):
             )
         )
 
+        # Add permissions for the Step Function role
+        step_functions_role.add_to_policy(iam.PolicyStatement(actions=["bedrock:StartIngestionJob"], resources=["*"]))
+
+        # Also add this permission
+        step_functions_role.add_to_policy(
+            iam.PolicyStatement(
+                actions=["s3:PutObject"], resources=[data_bucket.arn_for_objects("step-function-results/*")]
+            )
+        )
+
         # Lambda permission to allow invocation from Step Functions
         fetch_iiif_manifest_function.add_permission(
             "AllowStepFunctionsInvoke",
@@ -139,6 +162,24 @@ class StepFunctionsConstruct(Construct):
                         }
                     },
                 },
+                "ResultWriter": {
+                    "Resource": "arn:aws:states:::s3:putObject",
+                    "Parameters": {"Bucket": data_bucket.bucket_name, "Prefix": "step-function-results/"},
+                },
+            },
+        )
+
+        # Add bedrock knowledge base ingestion task
+        start_ingestion = sfn.CustomState(
+            self,
+            "StartBedrockIngestion",
+            state_json={
+                "Type": "Task",
+                "Parameters": {
+                    "DataSourceId": data_source_id,
+                    "KnowledgeBaseId": knowledge_base_id,
+                },
+                "Resource": "arn:aws:states:::aws-sdk:bedrockagent:startIngestionJob",
             },
         )
 
@@ -146,7 +187,7 @@ class StepFunctionsConstruct(Construct):
         success = sfn.Succeed(self, "TaskCompleted")
         _failure = sfn.Fail(self, "TaskFailed", error="TaskFailedError", cause="Task execution failed")
 
-        definition = run_task.next(distributed_map_state).next(success)
+        definition = run_task.next(distributed_map_state).next(start_ingestion).next(success)
 
         self.state_machine = sfn.StateMachine(
             self, "OsdpStackSpinup", definition=definition, timeout=Duration.hours(12), role=step_functions_role
@@ -182,9 +223,12 @@ class StepFunctionsConstruct(Construct):
                     resources=[self.state_machine.state_machine_arn],
                 )
             ],
+            execute_on_handler_change=False,
         )
 
         # Ensure the trigger function executes only after these resources are provisioned
         self.step_function_trigger.execute_after(self.state_machine)
         self.step_function_trigger.execute_after(data_bucket)
         self.step_function_trigger.execute_after(fetch_iiif_manifest_function)
+        self.step_function_trigger.execute_after(knowledge_base)
+        self.step_function_trigger.execute_after(data_source)

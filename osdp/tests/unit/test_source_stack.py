@@ -73,7 +73,7 @@ def test_build_function_created(stack_and_template):
             "Handler": "index.handler",
             "Runtime": "nodejs22.x",
             "Layers": ["arn:aws:lambda:us-east-1:553035198032:layer:git-lambda2:8"],
-            "Timeout": 300,
+            "Timeout": 600,
             "MemorySize": 1024,
             "EphemeralStorage": {"Size": 1024},
             "Environment": {

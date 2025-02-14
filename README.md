@@ -71,9 +71,10 @@ Since the `cdk.json` file is generally committed to source control, it should ge
 
 #### Required context values
 
-- `stack_prefix` (str) - will be appended to the beginning of the CloudFormation stack on deploy. (*For NU devs this is not required, it will use the `DEV_PREFIX` env var in AWS.)
+- `stack_prefix` (str) - will be appended to the beginning of the CloudFormation stack on deploy. (*For NU devs this is not needed, it will use the `DEV_PREFIX` env var in AWS.)
 - `collection_url` (str)- the url of the IIIF collection to load during deployment. There is a small collection (6 items) in the `cdk.json` file, but you will want to change or override on the command line.
 - `embedding_model_arn` (str) - Embedding model to use for Bedrock Knowledgebase
+- `foundation_model_arn` (str) - Foundation model to use for Bedrock RetreiveAndGenerate invocations
 
 #### Optional context values
 
@@ -84,30 +85,10 @@ Since the `cdk.json` file is generally committed to source control, it should ge
     },
 ```
 - `manifest_fetch_url` (str) - The concurrency to use when retrieving IIIF manifests from your API. If not provided, the default will be used (2).
-- `amplify.auth.secret_name` (str) - The name of the AWS Secrets Manager secret used for authentication. **To disable auth, use the `NO_AUTH` keyword**
-- `amplify.auth.username_key` (str) - The key for the username field within the secret (default: "username").
-- `amplify.auth.password_key` (str) - The key for the password field within the secret (default: "password").
 
 ```bash
 # use default secret name (`OSDPSecrets`)
 cdk deploy
-
-# use NO_AUTH keyword to disable auth
-cdk deploy -c amplify.auth.secret_name=NO_AUTH
-
-# use altername secret name with default username and password key
-cdk deploy -c amplify.auth.secret_name=MySecretName
-
-# use custom values
-cdk deploy \
-  -c amplify.auth.secret_name=MySecret \
-  -c amplify.auth.username_key=myUserKey \
-  -c amplify.auth.password_key=myPassKey
-```
-
-> [!IMPORTANT]
-> If a secret amplify.auth.secret_name is provided, it must be present in Secrets Manager or the app will not deploy
-
 
 #### Providing context values on the command line
 

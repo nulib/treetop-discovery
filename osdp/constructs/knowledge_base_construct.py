@@ -2,7 +2,6 @@
 from aws_cdk import CfnOutput
 from aws_cdk import aws_bedrock as bedrock
 from aws_cdk import aws_iam as iam
-from aws_cdk import custom_resources as cr
 
 from constructs import Construct
 
@@ -18,7 +17,6 @@ class KnowledgeBaseConstruct(Construct):
         db_credentials: str,
         embedding_model_arn: str,
         stack_prefix: str,
-        step_function_trigger: str,
         db_initialization: str,
         **kwargs,
     ) -> None:
@@ -71,7 +69,7 @@ class KnowledgeBaseConstruct(Construct):
         )
 
         # Create the Knowledge Base
-        knowledge_base = bedrock.CfnKnowledgeBase(
+        self.knowledge_base = bedrock.CfnKnowledgeBase(
             self,
             "OsdpBedrockKB",
             name=f"{stack_prefix}-osdp-knowledge-base",
@@ -98,7 +96,7 @@ class KnowledgeBaseConstruct(Construct):
             ),
         )
 
-        s3_data_source = bedrock.CfnDataSource(
+        self.s3_data_source = bedrock.CfnDataSource(
             self,
             "MyCfnDataSource",
             data_source_configuration=bedrock.CfnDataSource.DataSourceConfigurationProperty(
@@ -108,7 +106,7 @@ class KnowledgeBaseConstruct(Construct):
                 ),
             ),
             name="OsdpS3DataSource",
-            knowledge_base_id=knowledge_base.attr_knowledge_base_id,
+            knowledge_base_id=self.knowledge_base.attr_knowledge_base_id,
             description="OSDP S3 Data Source",
             vector_ingestion_configuration=bedrock.CfnDataSource.VectorIngestionConfigurationProperty(
                 chunking_configuration=bedrock.CfnDataSource.ChunkingConfigurationProperty(
@@ -120,34 +118,15 @@ class KnowledgeBaseConstruct(Construct):
             ),
         )
 
-        s3_data_source.node.add_dependency(knowledge_base)
-        knowledge_base.node.add_dependency(kb_role)
-        knowledge_base.node.add_dependency(db_cluster)
-        knowledge_base.node.add_dependency(db_credentials)
-        knowledge_base.node.add_dependency(db_initialization)  # Add this dependency
+        self.s3_data_source.node.add_dependency(self.knowledge_base)
+        self.knowledge_base.node.add_dependency(kb_role)
+        self.knowledge_base.node.add_dependency(db_cluster)
+        self.knowledge_base.node.add_dependency(db_credentials)
+        self.knowledge_base.node.add_dependency(db_initialization)
 
-        ingestion_job = cr.AwsCustomResource(
-            self,
-            "InitialIngestion",
-            on_create=cr.AwsSdkCall(
-                service="bedrock-agent",
-                action="startIngestionJob",
-                parameters={
-                    "dataSourceId": s3_data_source.attr_data_source_id,
-                    "knowledgeBaseId": knowledge_base.attr_knowledge_base_id,
-                    "name": "InitialSync",
-                    "description": "Initial sync of S3 data to Knowledge Base",
-                },
-                physical_resource_id=cr.PhysicalResourceId.of("InitialIngestion"),
-            ),
-            policy=cr.AwsCustomResourcePolicy.from_statements(
-                [iam.PolicyStatement(actions=["bedrock:StartIngestionJob"], resources=["*"])]
-            ),
-        )
+        # Add these properties to expose IDs
+        self.knowledge_base_id = self.knowledge_base.attr_knowledge_base_id
+        self.data_source_id = self.s3_data_source.attr_data_source_id
 
-        ingestion_job.node.add_dependency(s3_data_source)
-        ingestion_job.node.add_dependency(knowledge_base)
-        ingestion_job.node.add_dependency(step_function_trigger)
-
-        CfnOutput(self, "KnowledgeBaseId", value=knowledge_base.attr_knowledge_base_id)
+        CfnOutput(self, "KnowledgeBaseId", value=self.knowledge_base.attr_knowledge_base_id)
         CfnOutput(self, "KnowledgeBaseRoleArn", value=kb_role.role_arn)
