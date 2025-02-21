@@ -78,9 +78,8 @@ class UIConstruct(Construct):
             )
         )
 
-        # Does it need this?
         self.build_function_url = self.build_function.add_function_url(
-            auth_type=_lambda.FunctionUrlAuthType.NONE,
+            auth_type=_lambda.FunctionUrlAuthType.AWS_IAM,
         )
 
         # Grant Lambda permissions

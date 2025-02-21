@@ -37,7 +37,7 @@ class ApiConstruct(Construct):
 
         # Define the Lambda function URL resource
         self.api_url = my_function.add_function_url(
-            auth_type=_lambda.FunctionUrlAuthType.NONE,
+            auth_type=_lambda.FunctionUrlAuthType.AWS_IAM,
         )
 
         # Define a CloudFormation output for your URL
