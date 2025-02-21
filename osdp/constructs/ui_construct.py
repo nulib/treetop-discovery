@@ -1,7 +1,7 @@
 # ui_construct.py
 from typing import Optional
 
-from aws_cdk import App, BundlingOptions, CfnOutput, Duration, Fn, Size, Stack, triggers
+from aws_cdk import App, BundlingFileAccess, BundlingOptions, CfnOutput, Duration, Fn, Size, Stack, triggers
 from aws_cdk import aws_amplify_alpha as amplify
 from aws_cdk import aws_iam as iam
 from aws_cdk import (
@@ -116,6 +116,7 @@ class UIConstruct(Construct):
                 "./functions/build_function",
                 bundling=BundlingOptions(
                     image=_lambda.Runtime.NODEJS_22_X.bundling_image,
+                    bundling_file_access=BundlingFileAccess.VOLUME_COPY,
                     user="root",
                     command=["bash", "-c", "npm i && cp -r . /asset-output/"],
                 ),
