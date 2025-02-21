@@ -1,4 +1,7 @@
 .env
-**/*/node_modules/*
+cdk.out/
+__pycache__/
+.pytest_cache/
+node_modules/
 .venv
 .ruff_cache

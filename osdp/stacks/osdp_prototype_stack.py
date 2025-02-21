@@ -12,7 +12,7 @@ from constructs import Construct
 from constructs.api_construct import ApiConstruct
 from constructs.ecs_task_construct import EcsConstruct
 from constructs.step_functions_construct import StepFunctionsConstruct
-from constructs.ui_construct import UIConstruct
+from constructs.ui_construct import AmplifyAuthContext, UIConstruct
 
 ECR_REPO = "arn:aws:ecr:us-east-1:625046682746:repository/osdp-iiif-fetcher"
 ECR_IMAGE = "625046682746.dkr.ecr.us-east-1.amazonaws.com/osdp-iiif-fetcher:latest"
@@ -37,7 +37,13 @@ class OsdpPrototypeStack(Stack):
         api_construct = ApiConstruct(self, "ApiConstruct")
 
         # Create the UI
-        _ui_construct = UIConstruct(self, "UIConstruct", stack_id=suffix, api_url=api_construct.api_url.url)
+        _ui_construct = UIConstruct(
+            self,
+            "UIConstruct",
+            stack_id=suffix,
+            api_url=api_construct.api_url.url,
+            auth_context=AmplifyAuthContext(self),
+        )
 
         # S3 bucket for the IIIF Manifests (and other data)
         data_bucket_name = Fn.join("-", [self.stack_name.lower(), suffix])
