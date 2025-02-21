@@ -65,7 +65,7 @@ def test_build_function_created(stack_and_template):
         "AWS::Lambda::Function",
         {
             "Handler": "index.handler",
-            "Runtime": "nodejs18.x",
+            "Runtime": "nodejs22.x",
             "Layers": ["arn:aws:lambda:us-east-1:553035198032:layer:git-lambda2:8"],
             "Timeout": 300,
             "MemorySize": 1024,
