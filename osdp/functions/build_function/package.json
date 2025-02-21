@@ -6,9 +6,12 @@
     "format": "prettier --write **/*.js"
   },
   "devDependencies": {
-    "@aws-sdk/client-s3": "^3.733.0",
     "@types/aws-lambda": "^8.10.147",
     "@types/node": "^22.10.7",
     "prettier": "^3.4.2"
+  },
+  "dependencies": {
+    "@aws-sdk/client-amplify": "^3.750.0",
+    "zip-lib": "^1.0.5"
   }
 }

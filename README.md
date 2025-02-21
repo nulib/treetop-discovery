@@ -15,13 +15,24 @@ cd osdp
 
 ### Setup
 
+The OSDP primarily uses Python, but NodeJS is used for one lambda.
+
+#### Python
+
+Ensure using Python 3.10.5:
+
+```
+python --version
+# Python 3.10.5
+```
+
 To manually create a virtualenv
 
 ```
-python3 -m venv .venv
+python -m venv .venv
 ```
 
-Aactivate your virtualenv.
+Activate your virtualenv.
 
 ```
 source .venv/bin/activate
@@ -31,6 +42,25 @@ Install the required dependencies.
 
 ```
 pip install -r requirements.txt -r requirements-dev.txt
+```
+
+#### Node
+
+**Node is only needed for local development not deployment**
+
+Ensure using v22:
+
+```
+node --version
+# v22.13.1
+```
+
+There is one lambda that uses node:
+
+```
+cd functions/build_function
+npm i
+cd ../../
 ```
 
 ### Define context values
@@ -53,6 +83,29 @@ Since the `cdk.json` file is generally committed to source control, it should ge
     },
 ```
 - `manifest_fetch_url` (str) - The concurrency to use when retrieving IIIF manifests from your API. If not provided, the default will be used (2).
+- `amplify.auth.secret_name` (str) - The name of the AWS Secrets Manager secret used for authentication. **To disable auth, use the `NO_AUTH` keyword**
+- `amplify.auth.username_key` (str) - The key for the username field within the secret (default: "username").
+- `amplify.auth.password_key` (str) - The key for the password field within the secret (default: "password").
+
+```bash
+# use default secret name (`OSDPSecrets`)
+cdk deploy
+
+# use NO_AUTH keyword to disable auth
+cdk deploy -c amplify.auth.secret_name=NO_AUTH
+
+# use altername secret name with default username and password key
+cdk deploy -c amplify.auth.secret_name=MySecretName
+
+# use custom values
+cdk deploy \
+  -c amplify.auth.secret_name=MySecret \
+  -c amplify.auth.username_key=myUserKey \
+  -c amplify.auth.password_key=myPassKey
+```
+
+> [!IMPORTANT]
+> If a secret amplify.auth.secret_name is provided, it must be present in Secrets Manager or the app will not deploy
 
 
 #### Providing context values on the command line
@@ -110,17 +163,13 @@ or
 ruff check --fix .
 ```
 
-### Stlye
+### Style
 
 To run formatting
 
 ```
 ruff format .
 ```
-
-To add additional dependencies, for example other CDK libraries, just add
-them to your `setup.py` file and rerun the `pip install -r requirements.txt`
-command.
 
 ## Useful commands
 

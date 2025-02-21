@@ -17,20 +17,43 @@ def stack_and_template():
     return stack, template
 
 
-def test_ui_bucket_created(stack_and_template):
+def test_ui_amplify_created(stack_and_template):
     stack, template = stack_and_template
 
-    template.has_resource_properties("AWS::S3::Bucket", {"WebsiteConfiguration": {}})
+    template.has_resource_properties(
+        "AWS::Amplify::App",
+        {
+            "Name": {
+                "Fn::Join": [
+                    "-",
+                    [
+                        assertions.Match.string_like_regexp(f"{stack.stack_name.lower()}-ui"),
+                        assertions.Match.any_value(),
+                    ],
+                ]
+            }
+        },
+    )
 
     template.has_output(
         "*",
         {
-            "Description": "URL for UI website hosted on S3",
-            "Value": {
-                "Fn::GetAtt": assertions.Match.array_with(
-                    [assertions.Match.string_like_regexp("UIConstructUserInterfaceBucket.*"), "WebsiteURL"]
-                )
-            },
+            "Description": "URL for UI hosted on Amplify",
+            "Value": assertions.Match.object_like(
+                {
+                    "Fn::Join": [
+                        "",
+                        [
+                            "https://main.",  # main branch hardcoded in ui construct
+                            {
+                                "Fn::GetAtt": assertions.Match.array_with(
+                                    [assertions.Match.string_like_regexp("UIConstructAmplifyApp.*"), "DefaultDomain"]
+                                )
+                            },
+                        ],
+                    ]
+                }
+            ),
         },
     )
 
@@ -49,7 +72,13 @@ def test_build_function_created(stack_and_template):
             "EphemeralStorage": {"Size": 1024},
             "Environment": {
                 "Variables": {
-                    "BUCKET_NAME": assertions.Match.any_value(),
+                    "AMPLIFY_APP_ID": {
+                        "Fn::GetAtt": [
+                            assertions.Match.string_like_regexp("UIConstructAmplifyApp.*"),
+                            "AppId",
+                        ],
+                    },
+                    "AMPLIFY_BRANCH_NAME": assertions.Match.any_value(),
                     "REPO_NAME": "osdp-prototype-ui",
                     "NEXT_PUBLIC_API_URL": assertions.Match.any_value(),
                 }
