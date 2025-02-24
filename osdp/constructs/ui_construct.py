@@ -79,7 +79,6 @@ class UIConstruct(Construct):
         amplify_branch (amplify.Branch): The Amplify branch created by this construct.
         build_function (_lambda.Function): The Lambda function that builds and deploys the UI.
         build_function_url (str): The URL for the build function.
-        function_invoker_principal (Optional[iam.WebIdentityPrincipal]): Principle that can invoke the build function.
         function_invoker_role (Optional[iam.Role]): The role that can invoke the build function.
 
     Args:
@@ -88,7 +87,7 @@ class UIConstruct(Construct):
         stack_id (str): The unique ID for the stack.
         api_url (str): The URL of the API to be included in the UI build.
         auth_context (AmplifyAuthContext): The authentication values for the UI retrieved from the CDK context.
-        function_invoke_arn (Optional[str]): The ARN of the role that can invoke the build function.
+        function_invoker_principal (Optional[iam.IPrincipal]): Principal that can invoke the build function.
     """
 
     def __init__(
@@ -99,7 +98,7 @@ class UIConstruct(Construct):
         stack_id: str,
         api_url: str,
         auth_context: AmplifyAuthContext,
-        function_invoke_arn: Optional[str] = None,
+        function_invoker_principal: Optional[iam.IPrincipal] = None,
         **kwargs,
     ) -> None:
         super().__init__(scope, id)
@@ -184,23 +183,35 @@ class UIConstruct(Construct):
             auth_type=_lambda.FunctionUrlAuthType.AWS_IAM,
         )
 
-        if function_invoke_arn:
-            self.function_invoker_principal = iam.WebIdentityPrincipal(function_invoke_arn)
+        self.function_invoker_role = None
+        if function_invoker_principal:
             self.function_invoker_role = iam.Role(
                 self,
                 "UIBuildFunctionInvokeRole",
-                assumed_by=self.function_invoker_principal,
-                role_name="UIBuildFunctionInvokeRole",
+                # Allow the principal to assume the role
+                assumed_by=function_invoker_principal,
+                # Role names must be unique within an account
+                # so prepend the stack name, which includes the stack prefix
+                role_name=f"{stack.stack_name}-UIBuildFunctionInvokerRole",
             )
 
-            self.function_invoker_role.add_to_policy(
-                iam.PolicyStatement(
-                    actions=["lambda:InvokeFunctionUrl"],
-                    resources=[self.build_function.function_arn],
+            self.function_invoker_role.attach_inline_policy(
+                iam.Policy(
+                    self,
+                    "UIBuildFunctionInvokerPolicy",
+                    statements=[
+                        iam.PolicyStatement(
+                            actions=["lambda:InvokeFunctionUrl"],
+                            resources=[self.build_function.function_arn],
+                        )
+                    ],
                 )
             )
+
             self.build_function.add_permission(
-                "BuildFunctionInvokePermission", principal=self.function_invoker_role, action="lambda:InvokeFunctionUrl"
+                "UIBuildFunctionInvokerPermission",
+                principal=iam.ArnPrincipal(self.function_invoker_role.role_arn),
+                action="lambda:InvokeFunctionUrl",
             )
 
         self.build_function.node.add_dependency(self.amplify_app)
@@ -211,4 +222,16 @@ class UIConstruct(Construct):
             "Website URL",
             value=f"https://{app_branch_name}.{self.amplify_app.default_domain}",
             description="URL for UI hosted on Amplify",
+        )
+        CfnOutput(
+            self,
+            "BuildFunctionInvokerRoleArn",
+            value=self.function_invoker_role.role_arn if self.function_invoker_role else "N/A",
+            description="The ARN of the role that can invoke the build function.",
+        )
+        CfnOutput(
+            self,
+            "BuildFunctionInvokerRoleName",
+            value=self.function_invoker_role.role_name if self.function_invoker_role else "N/A",
+            description="The name of the role that can invoke the build function.",
         )

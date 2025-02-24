@@ -6,6 +6,7 @@ from aws_cdk import (
     Stack,
     Tags,
 )
+from aws_cdk import aws_iam as iam
 from aws_cdk import (
     aws_s3 as s3,
 )
@@ -22,7 +23,11 @@ ECR_IMAGE = "625046682746.dkr.ecr.us-east-1.amazonaws.com/osdp-iiif-fetcher:late
 
 class OsdpPrototypeStack(Stack):
     def __init__(
-        self, scope: Construct, construct_id: str, ui_function_invoke_arn: Optional[str] = None, **kwargs
+        self,
+        scope: Construct,
+        construct_id: str,
+        ui_function_invoke_principal: Optional[iam.WebIdentityPrincipal] = None,
+        **kwargs,
     ) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
@@ -47,7 +52,7 @@ class OsdpPrototypeStack(Stack):
             stack_id=suffix,
             api_url=self.api_construct.api_url.url,
             auth_context=AmplifyAuthContext(self),
-            function_invoke_arn=ui_function_invoke_arn,
+            function_invoker_principal=ui_function_invoke_principal,
         )
 
         # S3 bucket for the IIIF Manifests (and other data)

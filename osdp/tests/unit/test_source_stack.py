@@ -1,5 +1,6 @@
 import aws_cdk as core
 import aws_cdk.assertions as assertions
+import aws_cdk.aws_iam as iam
 import pytest
 
 from stacks.osdp_prototype_stack import OsdpPrototypeStack
@@ -94,7 +95,7 @@ def test_function_invoker_role_not_created(stack_and_template):
     template.resource_properties_count_is(
         "AWS::IAM::Role",
         {
-            "RoleName": "UIBuildFunctionInvokeRole",
+            "RoleName": f"{stack.stack_name}-UIBuildFunctionInvokerRole",
         },
         0,
     )
@@ -106,12 +107,15 @@ def test_function_invoker_role_created():
     app.node.set_context("tags", {"foo": "bar", "environment": "dev"})
     app.node.set_context("collection_url", "http://example.com")
     app.node.set_context("aws:cdk:bundling-stacks", [])  # Disable bundling to speed up tests
-    foo = "arn:aws:iam::123456789012:oidc-provider/token.actions.githubusercontent.com"
-    print(foo)
+    github_action_arn = "arn:aws:iam::123456789012:oidc-provider/token.actions.githubusercontent.com"
+    principal = iam.WebIdentityPrincipal(
+        github_action_arn,
+        conditions={"StringLike": {"token.actions.githubusercontent.com:sub": "repo:nulib/osdp-prototype-ui:*"}},
+    )
     stack = OsdpPrototypeStack(
         app,
         "alice-OSDP-Prototype",
-        ui_function_invoke_arn=foo,
+        ui_function_invoke_principal=principal,
         env={"account": "123456789012", "region": "us-east-1"},
     )
     template = assertions.Template.from_stack(stack)
@@ -119,7 +123,7 @@ def test_function_invoker_role_created():
     template.resource_properties_count_is(
         "AWS::IAM::Role",
         {
-            "RoleName": "UIBuildFunctionInvokeRole",
+            "RoleName": f"{stack.stack_name}-UIBuildFunctionInvokerRole",
         },
         1,
     )
