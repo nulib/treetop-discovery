@@ -201,7 +201,7 @@ class UIConstruct(Construct):
                     "UIBuildFunctionInvokerPolicy",
                     statements=[
                         iam.PolicyStatement(
-                            actions=["lambda:InvokeFunctionUrl"],
+                            actions=["lambda:InvokeFunction"],
                             resources=[self.build_function.function_arn],
                         )
                     ],
@@ -211,7 +211,7 @@ class UIConstruct(Construct):
             self.build_function.add_permission(
                 "UIBuildFunctionInvokerPermission",
                 principal=iam.ArnPrincipal(self.function_invoker_role.role_arn),
-                action="lambda:InvokeFunctionUrl",
+                action="lambda:InvokeFunction",
             )
 
         self.build_function.node.add_dependency(self.amplify_app)
