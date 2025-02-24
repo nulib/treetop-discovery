@@ -8,12 +8,6 @@ const {
 const zl = require("zip-lib");
 const { readFileSync } = require("fs");
 
-/**
- * @typedef {import("aws-lambda").APIGatewayProxyEventV2} Event
- * @typedef {import("aws-lambda").Context} Context
- *
- */
-
 const amplifyClient = new AmplifyClient({});
 
 /**
@@ -37,7 +31,7 @@ async function uploadZipFile(zipFilePath, zipUploadUrl) {
     throw new Error(`Failed to upload zip file: ${response?.statusText}`);
   }
 
-  console.log('Response from upload:', response);
+  console.log("Response from upload:", response);
 
   return response;
 }
@@ -45,16 +39,17 @@ async function uploadZipFile(zipFilePath, zipUploadUrl) {
 /**
  * Fetch, build, and deploy the UI from source
  *
- * @param {Event} event
- * @param {Context} _context
+ * @param {any} event
+ * @param {import("aws-lambda").Context} _context
  */
 exports.handler = async (event, _context) => {
   try {
-    const body = JSON.parse(event?.body || "{}");
     const repoName = process.env.REPO_NAME;
     const apiUrl = process.env.NEXT_PUBLIC_API_URL;
     const appId = process.env.AMPLIFY_APP_ID;
-    const branchName = body["AMPLIFY_BRANCH_NAME"] ?? process.env.AMPLIFY_BRANCH_NAME;
+    // Because this function is not triggered by the API Gateway or another service,
+    // we pass the branch name as an environment variable directly on the event.
+    const branchName = event["AMPLIFY_BRANCH_NAME"] ?? process.env.AMPLIFY_BRANCH_NAME;
 
     if (!repoName) {
       throw new Error("REPO_NAME is not set in environment variables");
