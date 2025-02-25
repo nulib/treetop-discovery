@@ -134,7 +134,7 @@ class UIConstruct(Construct):
             basic_auth=basic_auth,
         )
 
-        self.amplify_branch = self.amplify_app.add_branch(app_branch_name)
+        self.amplify_branch = self.amplify_app.add_branch(app_branch_name, stage="PRODUCTION")
 
         self.build_function = triggers.TriggerFunction(
             self,
