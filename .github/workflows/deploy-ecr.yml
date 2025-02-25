@@ -6,11 +6,6 @@ on:
       - main
     paths:
       - 'iiif/**'
-  pull_request:
-    branches:
-      - main
-    paths:
-      - 'iiif/**'
 
 jobs:
   deploy:
