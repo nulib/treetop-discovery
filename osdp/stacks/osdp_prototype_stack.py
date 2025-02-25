@@ -19,8 +19,7 @@ from constructs.knowledge_base_construct import KnowledgeBaseConstruct
 from constructs.step_functions_construct import StepFunctionsConstruct
 from constructs.ui_construct import AmplifyAuthContext, UIConstruct
 
-ECR_REPO = "arn:aws:ecr:us-east-1:625046682746:repository/osdp-iiif-fetcher"
-ECR_IMAGE = "625046682746.dkr.ecr.us-east-1.amazonaws.com/osdp-iiif-fetcher:latest"
+ECR_IMAGE = "public.ecr.aws/nulib/osdp-iiif-fetcher:latest"
 
 
 class OsdpPrototypeStack(Stack):
@@ -76,7 +75,7 @@ class OsdpPrototypeStack(Stack):
         )
         # Instantiate the ECS construct
         ecs_construct = EcsConstruct(
-            self, "EcsConstruct", data_bucket=data_bucket, ecr_repo=ECR_REPO, ecr_image=ECR_IMAGE
+            self, "EcsConstruct", data_bucket=data_bucket, ecr_image=ECR_IMAGE
         )
 
         # Instantiate the Step Functions construct
