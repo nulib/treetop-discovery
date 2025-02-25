@@ -9,10 +9,12 @@ from stacks.osdp_prototype_stack import OsdpPrototypeStack
 @pytest.fixture
 def stack_and_template():
     app = core.App()
-    # Set context values on the app's node
     app.node.set_context("stack_prefix", "alice")
     app.node.set_context("tags", {"foo": "bar", "environment": "dev"})
     app.node.set_context("collection_url", "http://example.com")
+    app.node.set_context(
+        "embedding_model_arn", "arn:aws:sagemaker:us-east-1:123456789012:model/bedrock-embedding-model"
+    )
     app.node.set_context("aws:cdk:bundling-stacks", [])  # Disable bundling to speed up tests
     stack = OsdpPrototypeStack(app, "alice-OSDP-Prototype", env={"account": "123456789012", "region": "us-east-1"})
     template = assertions.Template.from_stack(stack)
@@ -106,6 +108,9 @@ def test_function_invoker_role_created():
     app.node.set_context("stack_prefix", "alice")
     app.node.set_context("tags", {"foo": "bar", "environment": "dev"})
     app.node.set_context("collection_url", "http://example.com")
+    app.node.set_context(
+        "embedding_model_arn", "arn:aws:sagemaker:us-east-1:123456789012:model/bedrock-embedding-model"
+    )
     app.node.set_context("aws:cdk:bundling-stacks", [])  # Disable bundling to speed up tests
     github_action_arn = "arn:aws:iam::123456789012:oidc-provider/token.actions.githubusercontent.com"
     principal = iam.WebIdentityPrincipal(

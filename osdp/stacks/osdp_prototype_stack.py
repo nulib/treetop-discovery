@@ -13,7 +13,9 @@ from aws_cdk import (
 
 from constructs import Construct
 from constructs.api_construct import ApiConstruct
+from constructs.db_construct import DatabaseConstruct
 from constructs.ecs_task_construct import EcsConstruct
+from constructs.knowledge_base_construct import KnowledgeBaseConstruct
 from constructs.step_functions_construct import StepFunctionsConstruct
 from constructs.ui_construct import AmplifyAuthContext, UIConstruct
 
@@ -26,6 +28,7 @@ class OsdpPrototypeStack(Stack):
         self,
         scope: Construct,
         construct_id: str,
+        stack_prefix: str,
         ui_function_invoke_principal: Optional[iam.WebIdentityPrincipal] = None,
         **kwargs,
     ) -> None:
@@ -77,10 +80,26 @@ class OsdpPrototypeStack(Stack):
         )
 
         # Instantiate the Step Functions construct
-        _step_functions_construct = StepFunctionsConstruct(
+        step_functions_construct = StepFunctionsConstruct(
             self,
             "StepFunctionsConstruct",
             ecs_construct=ecs_construct,
             data_bucket=data_bucket,
             collection_url=self.node.try_get_context("collection_url"),
+        )
+
+        # Database construct
+        database_construct = DatabaseConstruct(self, "DatabaseConstruct")
+
+        # Knowledge Base construct
+        _knowledge_base_construct = KnowledgeBaseConstruct(
+            self,
+            "KnowledgeBaseConstruct",
+            data_bucket=data_bucket,
+            embedding_model_arn=self.node.try_get_context("embedding_model_arn"),
+            db_cluster=database_construct.db_cluster,
+            db_credentials=database_construct.db_credentials,
+            stack_prefix=stack_prefix,
+            step_function_trigger=step_functions_construct.step_function_trigger,
+            db_initialization=database_construct.db_init3_index,
         )

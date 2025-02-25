@@ -7,7 +7,7 @@ from pipeline.osdp_application_stage import OsdpApplicationStage
 
 
 class PipelineStack(cdk.Stack):
-    def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
+    def __init__(self, scope: Construct, construct_id: str, stack_prefix: str, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
         # Define the CodePipeline source
@@ -30,7 +30,7 @@ class PipelineStack(cdk.Stack):
                 "npm install",
                 "cd ../../",
                 "cdk --version",
-                "cdk synth -c stack_prefix=staging",
+                f"cdk synth -c stack_prefix={stack_prefix}",
             ],
             primary_output_directory="osdp/cdk.out",
         )
@@ -75,6 +75,6 @@ class PipelineStack(cdk.Stack):
 
         # Define the application stages
         deploy_stage = OsdpApplicationStage(
-            self, "staging", env=cdk.Environment(account="625046682746", region="us-east-1")
+            self, "staging", stack_prefix=stack_prefix, env=cdk.Environment(account="625046682746", region="us-east-1")
         )
         pipeline.add_stage(deploy_stage)
