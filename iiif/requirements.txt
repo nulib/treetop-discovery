@@ -1,2 +1,2 @@
-loam-iiif==0.1.1
+loam-iiif==0.1.3
 boto3==1.36.8
