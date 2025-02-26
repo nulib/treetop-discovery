@@ -16,7 +16,7 @@ from constructs import Construct
 
 
 class EcsConstruct(Construct):
-    def __init__(self, scope: Construct, id: str, *, data_bucket, ecr_repo: str, ecr_image: str, **kwargs) -> None:
+    def __init__(self, scope: Construct, id: str, *, data_bucket, ecr_image: str, **kwargs) -> None:
         super().__init__(scope, id)
 
         # Use the default VPC
@@ -32,20 +32,6 @@ class EcsConstruct(Construct):
             assumed_by=iam.ServicePrincipal("ecs-tasks.amazonaws.com"),
         )
 
-        self.task_role.add_to_policy(
-            iam.PolicyStatement(
-                actions=["ecr:GetDownloadUrlForLayer", "ecr:BatchGetImage"],
-                resources=[ecr_repo],
-            )
-        )
-
-        self.task_role.add_to_policy(
-            iam.PolicyStatement(
-                actions=["ecr:GetAuthorizationToken"],
-                resources=["*"],  # note: This applies to the entire ECR service
-            )
-        )
-
         data_bucket.grant_put(self.task_role)
 
         # Execution Role for ECS Task
@@ -53,24 +39,6 @@ class EcsConstruct(Construct):
             self,
             "OsdpExecutionRole",
             assumed_by=iam.ServicePrincipal("ecs-tasks.amazonaws.com"),
-        )
-
-        self.execution_role.add_to_policy(
-            iam.PolicyStatement(
-                actions=["ecr:GetAuthorizationToken"],
-                resources=["*"],  # This allows getting auth tokens for ECR
-            )
-        )
-
-        self.execution_role.add_to_policy(
-            iam.PolicyStatement(
-                actions=[
-                    "ecr:BatchCheckLayerAvailability",
-                    "ecr:GetDownloadUrlForLayer",
-                    "ecr:BatchGetImage",
-                ],
-                resources=[ecr_repo],
-            )
         )
 
         self.execution_role.add_to_policy(
