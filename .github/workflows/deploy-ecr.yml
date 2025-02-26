@@ -5,6 +5,7 @@ on:
     branches:
       - main
     paths:
+      - '!iiif/**/*.md'
       - 'iiif/**'
   workflow_dispatch:
 
