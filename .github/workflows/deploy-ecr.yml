@@ -37,5 +37,6 @@ jobs:
           REPOSITORY: osdp-iiif-fetcher
           IMAGE_TAG: latest
         run: |
+          cd iiif
           docker build -t $REGISTRY/$REGISTRY_ALIAS/$REPOSITORY:$IMAGE_TAG .
           docker push $REGISTRY/$REGISTRY_ALIAS/$REPOSITORY:$IMAGE_TAG
