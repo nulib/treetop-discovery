@@ -4,6 +4,8 @@ import pytest
 
 from stacks.osdp_prototype_stack import OsdpPrototypeStack
 
+STACK_PREFIX = "alice"
+
 
 @pytest.fixture
 def stack_and_template():
@@ -19,7 +21,7 @@ def stack_and_template():
     )
     app.node.set_context("aws:cdk:bundling-stacks", [])  # Disable bundling to speed up tests
     stack = OsdpPrototypeStack(
-        app, "alice-OSDP-Prototype", stack_prefix="alice", env={"account": "123456789012", "region": "us-east-1"}
+        app, "alice-OSDP-Prototype", stack_prefix=STACK_PREFIX, env={"account": "123456789012", "region": "us-east-1"}
     )
     template = assertions.Template.from_stack(stack)
     return stack, template
@@ -30,19 +32,19 @@ def test_cognito_user_pool_created(stack_and_template):
     template.has_resource_properties(
         "AWS::Cognito::UserPool",
         {
-            "UserPoolName": "OSDPUsers",
-            "AutoVerifiedAttributes": ["email"],  # Note: AutoVerifiedAttributes not AutoVerifyAttributes
+            "UserPoolName": f"{STACK_PREFIX}-OSDPUsers",
+            "AutoVerifiedAttributes": ["email"],
             "MfaConfiguration": "OFF",
             "Policies": {
                 "PasswordPolicy": {
                     "MinimumLength": 8,
                     "RequireLowercase": True,
-                    "RequireNumbers": True,  # Note: RequireNumbers not RequireDigits
+                    "RequireNumbers": True,
                     "RequireSymbols": True,
                     "RequireUppercase": True,
                 }
             },
-            "AdminCreateUserConfig": {"AllowAdminCreateUserOnly": True},  # This replaces SelfSignUpEnabled: False
+            "AdminCreateUserConfig": {"AllowAdminCreateUserOnly": True},
         },
     )
 
@@ -53,12 +55,12 @@ def test_cognito_user_pool_client_created(stack_and_template):
         "AWS::Cognito::UserPoolClient",
         {
             "UserPoolId": assertions.Match.any_value(),
-            "ClientName": "OSDPClient",
+            "ClientName": f"{STACK_PREFIX}-OSDPClient",
             "ExplicitAuthFlows": [
                 "ALLOW_USER_PASSWORD_AUTH",
                 "ALLOW_ADMIN_USER_PASSWORD_AUTH",
                 "ALLOW_USER_SRP_AUTH",
-                "ALLOW_REFRESH_TOKEN_AUTH",  # This was missing in your original test
+                "ALLOW_REFRESH_TOKEN_AUTH",
             ],
             "PreventUserExistenceErrors": "ENABLED",
             "EnableTokenRevocation": True,

@@ -30,7 +30,7 @@ class ApiConstruct(Construct):
         self.user_pool = cognito.UserPool(
             self,
             "OSDPUsers",
-            user_pool_name="OSDPUsers",
+            user_pool_name=f"{stack_prefix}-OSDPUsers",
             self_sign_up_enabled=False,  # Only admin can create users
             auto_verify={"email": True},
             password_policy=cognito.PasswordPolicy(
@@ -44,7 +44,7 @@ class ApiConstruct(Construct):
         # Create a User Pool Client
         self.user_pool_client = self.user_pool.add_client(
             "OSDPClient",
-            user_pool_client_name="OSDPClient",
+            user_pool_client_name=f"{stack_prefix}-OSDPClient",
             auth_flows={"user_password": True, "admin_user_password": True, "user_srp": True},
             prevent_user_existence_errors=True,
             enable_token_revocation=True,
