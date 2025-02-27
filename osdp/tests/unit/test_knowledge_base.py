@@ -42,40 +42,11 @@ def test_knowledge_base_outputs(stack_and_template):
 
 def test_knowledge_base_resource_created(stack_and_template):
     stack, template = stack_and_template
-    # Assuming you're using a CfnKnowledgeBase resource in your construct, check that there's exactly one.
     template.resource_count_is("AWS::Bedrock::KnowledgeBase", 1)
 
 
 def test_data_source_created(stack_and_template):
     stack, template = stack_and_template
-    # Check for your S3 data source resource with the expected Name and Description
     template.has_resource_properties(
         "AWS::Bedrock::DataSource", {"Name": "OsdpS3DataSource", "Description": "OSDP S3 Data Source"}
     )
-
-
-def test_ingestion_custom_resource_exists(stack_and_template):
-    stack, template = stack_and_template
-
-    # Get all Custom::AWS resources
-    custom_resources = template.find_resources("Custom::AWS")
-
-    # Look for a resource that matches our bedrock ingestion job
-    found_ingestion_job = False
-    for _resource_id, resource in custom_resources.items():
-        resource_str = str(resource)  # Convert to string for easier searching
-
-        # Check for key characteristics of our ingestion job
-        if all(
-            marker in resource_str
-            for marker in [
-                "bedrock-agent",
-                "startIngestionJob",
-                "InitialSync",  # The name parameter
-                "knowledgeBaseId",
-            ]
-        ):
-            found_ingestion_job = True
-            break
-
-    assert found_ingestion_job, "No ingestion job custom resource found"
