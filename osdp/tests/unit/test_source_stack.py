@@ -15,6 +15,9 @@ def stack_and_template():
     app.node.set_context(
         "embedding_model_arn", "arn:aws:sagemaker:us-east-1:123456789012:model/bedrock-embedding-model"
     )
+    app.node.set_context(
+        "foundation_model_arn", "arn:aws:sagemaker:us-east-1:123456789012:model/bedrock-embedding-model"
+    )
     app.node.set_context("aws:cdk:bundling-stacks", [])  # Disable bundling to speed up tests
     stack = OsdpPrototypeStack(
         app, "alice-OSDP-Prototype", stack_prefix="alice", env={"account": "123456789012", "region": "us-east-1"}
@@ -112,6 +115,9 @@ def test_function_invoker_role_created():
     app.node.set_context("collection_url", "http://example.com")
     app.node.set_context(
         "embedding_model_arn", "arn:aws:sagemaker:us-east-1:123456789012:model/bedrock-embedding-model"
+    )
+    app.node.set_context(
+        "foundation_model_arn", "arn:aws:sagemaker:us-east-1:123456789012:model/bedrock-embedding-model"
     )
     app.node.set_context("aws:cdk:bundling-stacks", [])  # Disable bundling to speed up tests
     github_action_arn = "arn:aws:iam::123456789012:oidc-provider/token.actions.githubusercontent.com"
