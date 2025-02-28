@@ -1,7 +1,7 @@
 # ui_construct.py
 from typing import Optional
 
-from aws_cdk import BundlingFileAccess, BundlingOptions, CfnOutput, Duration, Fn, Size, Stack, triggers
+from aws_cdk import BundlingFileAccess, BundlingOptions, CfnOutput, Duration, Size, Stack, triggers
 from aws_cdk import aws_amplify_alpha as amplify
 from aws_cdk import aws_iam as iam
 from aws_cdk import (
@@ -37,7 +37,7 @@ class UIConstruct(Construct):
         scope: Construct,
         id: str,
         *,
-        stack_id: str,
+        amplify_app: amplify.App,
         api_url: str,
         cognito_user_pool: None,
         cognito_user_pool_id: str,
@@ -48,21 +48,9 @@ class UIConstruct(Construct):
         super().__init__(scope, id)
 
         stack = Stack.of(self)
-        app_name = Fn.join("-", [stack.stack_name.lower(), "ui", stack_id])
         app_branch_name = "main"
-        basic_auth = None
 
-        self.amplify_app = amplify.App(
-            self,
-            "AmplifyApp",
-            app_name=app_name,
-            auto_branch_creation=amplify.AutoBranchCreation(
-                auto_build=False,
-            ),
-            basic_auth=basic_auth,
-        )
-
-        self.amplify_branch = self.amplify_app.add_branch(app_branch_name, stage="PRODUCTION")
+        self.amplify_branch = amplify_app.add_branch(app_branch_name, stage="PRODUCTION")
 
         self.build_function = triggers.TriggerFunction(
             self,
@@ -83,7 +71,7 @@ class UIConstruct(Construct):
                 "NEXT_PUBLIC_API_URL": api_url,
                 "NEXT_PUBLIC_COGNITO_USER_POOL_ID": cognito_user_pool_id,
                 "NEXT_PUBLIC_COGNITO_USER_POOL_CLIENT_ID": cognito_user_pool_client_id,
-                "AMPLIFY_APP_ID": self.amplify_app.app_id,
+                "AMPLIFY_APP_ID": amplify_app.app_id,
                 "AMPLIFY_BRANCH_NAME": app_branch_name,
             },
             timeout=Duration.minutes(10),
@@ -145,14 +133,14 @@ class UIConstruct(Construct):
                 action="lambda:InvokeFunction",
             )
 
-        self.build_function.node.add_dependency(self.amplify_app)
+        self.build_function.node.add_dependency(amplify_app)
         self.build_function.node.add_dependency(cognito_user_pool)
 
         CfnOutput(self, "buildFunctionUrl", value=self.build_function_url.url)
         CfnOutput(
             self,
             "Website URL",
-            value=f"https://{app_branch_name}.{self.amplify_app.default_domain}",
+            value=f"https://{app_branch_name}.{amplify_app.default_domain}",
             description="URL for UI hosted on Amplify",
         )
         CfnOutput(

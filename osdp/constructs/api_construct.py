@@ -1,9 +1,12 @@
+from typing import List
+
 from aws_cdk import (
     CfnOutput,
     Duration,
     RemovalPolicy,
     Stack,
 )
+from aws_cdk import aws_amplify_alpha as amplify
 from aws_cdk import (
     aws_apigateway as apigw,
 )
@@ -22,7 +25,15 @@ from constructs import Construct
 
 class ApiConstruct(Construct):
     def __init__(
-        self, scope: Construct, id: str, knowledge_base: str, stack_prefix: str, model_arn: str, **kwargs
+        self,
+        scope: Construct,
+        id: str,
+        knowledge_base: str,
+        stack_prefix: str,
+        model_arn: str,
+        amplify_app: amplify.App,
+        allowed_origins: List[str],  # Add this parameter
+        **kwargs,
     ) -> None:
         super().__init__(scope, id, **kwargs)
 
@@ -103,7 +114,17 @@ class ApiConstruct(Construct):
             "OSDPApi",
             rest_api_name=f"{stack_prefix}-OSDP-API",
             default_cors_preflight_options=apigw.CorsOptions(
-                allow_origins=["*"], allow_methods=["POST"], allow_headers=["*"]
+                allow_headers=[
+                    "Content-Type",
+                    "X-Amz-Date",
+                    "Authorization",
+                    "X-Api-Key",
+                    "X-Amz-Security-Token",
+                ],
+                status_code=200,
+                allow_methods=["OPTIONS", "POST"],
+                allow_credentials=True,
+                allow_origins=allowed_origins,
             ),
         )
 
@@ -116,6 +137,7 @@ class ApiConstruct(Construct):
 
         self.api.node.add_dependency(self.user_pool)
         self.api.node.add_dependency(knowledge_base)
+        self.api.node.add_dependency(amplify_app)
 
         # Add API Gateway URL to outputs
         CfnOutput(self, "ApiUrl", value=self.api.url)
