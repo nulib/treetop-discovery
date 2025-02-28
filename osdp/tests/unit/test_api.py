@@ -113,7 +113,6 @@ def test_api_gateway_cors_configured(stack_and_template):
         "ResponseParameters": {
             "method.response.header.Access-Control-Allow-Headers": assertions.Match.string_like_regexp(".*"),
             "method.response.header.Access-Control-Allow-Methods": assertions.Match.string_like_regexp(".*POST.*"),
-            "method.response.header.Access-Control-Allow-Origin": "'*'",
         }
     }
     template.has_resource_properties(

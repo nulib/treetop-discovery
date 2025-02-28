@@ -56,7 +56,7 @@ def test_ui_amplify_created(stack_and_template):
                             "https://main.",  # main branch hardcoded in ui construct
                             {
                                 "Fn::GetAtt": assertions.Match.array_with(
-                                    [assertions.Match.string_like_regexp("UIConstructAmplifyApp.*"), "DefaultDomain"]
+                                    [assertions.Match.string_like_regexp("AmplifyApp.*"), "DefaultDomain"]
                                 )
                             },
                         ],
@@ -83,7 +83,7 @@ def test_build_function_created(stack_and_template):
                 "Variables": {
                     "AMPLIFY_APP_ID": {
                         "Fn::GetAtt": [
-                            assertions.Match.string_like_regexp("UIConstructAmplifyApp.*"),
+                            assertions.Match.string_like_regexp("AmplifyApp.*"),
                             "AppId",
                         ],
                     },
