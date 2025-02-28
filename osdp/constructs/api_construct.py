@@ -123,8 +123,7 @@ class ApiConstruct(Construct):
                 ],
                 status_code=200,
                 allow_methods=["OPTIONS", "POST"],
-                allow_credentials=True,
-                allow_origins=allowed_origins,
+                allow_origins=["*"],
             ),
         )
 
@@ -141,3 +140,5 @@ class ApiConstruct(Construct):
 
         # Add API Gateway URL to outputs
         CfnOutput(self, "ApiUrl", value=self.api.url)
+        CfnOutput(self, "AllowedOrigins", value=allowed_origins)
+
