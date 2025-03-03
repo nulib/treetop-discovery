@@ -125,6 +125,7 @@ class ApiConstruct(Construct):
                 allow_methods=["OPTIONS", "POST"],
                 allow_origins=["*"],
             ),
+            endpoint_configuration=apigw.EndpointConfiguration(types=[apigw.EndpointType.REGIONAL]),
         )
 
         # Add /chat route with Cognito authorization
