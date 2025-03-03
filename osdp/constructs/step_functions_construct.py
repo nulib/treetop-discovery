@@ -158,6 +158,7 @@ class StepFunctionsConstruct(Construct):
                                     "row.$": "$",
                                 },
                             },
+                            "TimeoutSeconds": 43200,  # 12 hours
                             "End": True,
                         }
                     },
