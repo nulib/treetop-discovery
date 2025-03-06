@@ -13,6 +13,7 @@ def handler(event, _context):
 
     request_body = json.loads(event.get("body"))
     user_prompt = request_body.get("user_prompt")
+    _session_id = request_body.get("session_id", "")
 
     if not user_prompt:
         return {"statusCode": 400}
@@ -38,6 +39,20 @@ def handler(event, _context):
             "knowledgeBaseConfiguration": {
                 "knowledgeBaseId": knowledge_base_id,
                 "modelArn": modelArn,
+                "generationConfiguration": {
+                    "inferenceConfig": {
+                        "textInferenceConfig": {
+                            "maxTokens": 500,
+                            "temperature": 0.7,
+                            "topP": 0.9,
+                        }
+                    },
+                },
+                "retrievalConfiguration": {
+                    "vectorSearchConfiguration": {
+                        "numberOfResults": 10,
+                    }
+                },
             },
         },
     )
@@ -46,7 +61,11 @@ def handler(event, _context):
 
     response_output = bedrock_response["output"]["text"]
 
-    response = {"answer": response_output, "references": bedrock_response["citations"][0]["retrievedReferences"]}
+    response = {
+        "answer": response_output,
+        "references": bedrock_response["citations"][0]["retrievedReferences"],
+        "session_id": bedrock_response["sessionId"],
+    }
 
     return {
         "headers": {"Access-Control-Allow-Origin": "*", "Access-Control-Allow-Credentials": True},

@@ -32,7 +32,7 @@ def test_aurora_cluster_created(stack_and_template):
         {
             "Engine": "aurora-postgresql",
             "EngineVersion": assertions.Match.string_like_regexp("15.3"),
-            "ServerlessV2ScalingConfiguration": {"MinCapacity": 0.5, "MaxCapacity": 1},
+            "ServerlessV2ScalingConfiguration": {"MinCapacity": 0.5, "MaxCapacity": 8},
             "EnableHttpEndpoint": True,
         },
     )

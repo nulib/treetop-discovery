@@ -78,6 +78,7 @@ class ApiConstruct(Construct):
             handler="index.handler",
             code=_lambda.Code.from_asset("./functions/chat"),
             timeout=Duration.minutes(2),
+            memory_size=1024,
             environment={"KNOWLEDGE_BASE_ID": knowledge_base.attr_knowledge_base_id, "MODEL_ARN": model_arn},
         )
 
