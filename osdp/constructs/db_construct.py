@@ -70,8 +70,8 @@ class DatabaseConstruct(Construct):
             security_groups=[db_security_group],
             credentials=rds.Credentials.from_secret(self.db_credentials),
             removal_policy=RemovalPolicy.DESTROY,  # TODO Change this for production
-            serverless_v2_min_capacity=0.5,  # Minimum ACU (Aurora Capacity Units)
-            serverless_v2_max_capacity=1,  # Maximum ACU for dev
+            serverless_v2_min_capacity=0.5,
+            serverless_v2_max_capacity=8,
             enable_data_api=True,
         )
 
@@ -239,7 +239,8 @@ class DatabaseConstruct(Construct):
                     "resourceArn": self.db_cluster.cluster_arn,
                     "sql": """
                         CREATE INDEX IF NOT EXISTS embedding_idx ON bedrock_integration.bedrock_knowledge_base 
-                            USING ivfflat (embedding vector_l2_ops);
+                            USING ivfflat (embedding vector_l2_ops)
+                            WITH (lists = 100);
                     """,
                 },
                 physical_resource_id=cr.PhysicalResourceId.of("DBInit-3-Index"),
