@@ -25,7 +25,7 @@ class PipelineStack(cdk.Stack):
                 "npm install -g aws-cdk",
                 "pip install uv",
                 "uv sync --no-dev",
-                "source .venv/bin/activate",
+                ". .venv/bin/activate",
                 "cd osdp",
                 "cdk --version",
                 f"cdk synth -c stack_prefix={stack_prefix}",
@@ -46,7 +46,7 @@ class PipelineStack(cdk.Stack):
             pipelines.ShellStep(
                 "Lint",
                 input=source,
-                commands=["pip install uv", "uv sync --only-dev", "source .venv/bin/activate", "ruff check ."],
+                commands=["pip install uv", "uv sync --only-dev", ". .venv/bin/activate", "ruff check ."],
             )
         )
 
@@ -54,7 +54,7 @@ class PipelineStack(cdk.Stack):
             pipelines.ShellStep(
                 "Style",
                 input=source,
-                commands=["pip install uv", "uv sync --only-dev", "source .venv/bin/activate", "ruff format --check ."],
+                commands=["pip install uv", "uv sync --only-dev", ". .venv/bin/activate", "ruff format --check ."],
             )
         )
 
@@ -66,7 +66,7 @@ class PipelineStack(cdk.Stack):
                     "npm install -g aws-cdk",
                     "pip install uv",
                     "uv sync",
-                    "source .venv/bin/activate",
+                    ". .venv/bin/activate",
                     "cd osdp",
                     "pytest -vv tests/",
                 ],
