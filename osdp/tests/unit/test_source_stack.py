@@ -77,7 +77,7 @@ def test_build_function_created(stack_and_template):
             "Layers": ["arn:aws:lambda:us-east-1:553035198032:layer:git-lambda2:8"],
             "Timeout": 600,
             "MemorySize": 1024,
-            "EphemeralStorage": {"Size": 1024},
+            "EphemeralStorage": {"Size": 10240},
             "Environment": {
                 "Variables": {
                     "AMPLIFY_APP_ID": {

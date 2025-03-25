@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.13.1"
+      
+      - name: Install Node dependencies
+        run: |
+          npm install -g aws-cdk
+
+      - name: Install Python dependencies
+        run: |
+          pip install uv
+          uv sync --all-groups
+
+      - name: Activate virtualenv
+        run: |
+          . .venv/bin/activate
+          echo PATH=$PATH >> $GITHUB_ENV
+
+      - name: Run tests
+        working-directory: ./osdp
+        run: pytest -vv tests/
+
+      - name: Lint
+        working-directory: ./osdp
+        run: ruff check .
+
+      - name: Format check
+        working-directory: ./osdp
+        run: ruff format --check .
