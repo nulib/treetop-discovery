@@ -10,7 +10,7 @@ from stacks.osdp_prototype_stack import OsdpPrototypeStack
 app = cdk.App()
 
 # All the required context keys
-required_context = ["collection_url", "embedding_model_arn"]
+required_context = ["embedding_model_arn", "data"]
 
 # Validate that each required context is provided
 for key in required_context:
@@ -21,7 +21,28 @@ for key in required_context:
             f"Please pass it via the CLI (e.g., -c {key}=your_value) or define it in cdk.json."
         )
 
+# Validate the data structure
+data = app.node.try_get_context("data")
+data_type = data.get("type")
+if data_type not in ["iiif", "ead"]:
+    sys.exit(f"Error: Invalid data type '{data_type}'. The data.type must be either 'iiif' or 'ead'.")
+
+if data_type == "iiif" and not data.get("collection_url"):
+    sys.exit(
+        "Error: Missing required field 'collection_url' for data type 'iiif'. "
+        "Please provide it in the 'data' context object."
+    )
+
+if data_type == "ead":
+    s3_config = data.get("s3", {})
+    if not s3_config.get("bucket") or not s3_config.get("prefix"):
+        sys.exit(
+            "Error: Missing required S3 configuration for data type 'ead'. "
+            "Please provide 'bucket' and 'prefix' in the 'data.s3' context object."
+        )
+
 # Try to get a stack prefix value from the env or CDK context (CLI or cdk.json)
+# For NU developers this will use or DEV_PREFIX env var
 stack_prefix = os.environ.get("DEV_PREFIX") or app.node.try_get_context("stack_prefix")
 
 if not stack_prefix:

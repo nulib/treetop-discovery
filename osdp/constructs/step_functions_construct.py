@@ -29,7 +29,7 @@ class StepFunctionsConstruct(Construct):
         *,
         ecs_construct,
         data_bucket,
-        collection_url,
+        data_config,
         knowledge_base=None,
         data_source=None,
         knowledge_base_id=None,
@@ -68,12 +68,12 @@ class StepFunctionsConstruct(Construct):
         fetch_iiif_manifest_function = _lambda.Function(
             self,
             "fetch_iiif_manifest_function",
-            runtime=_lambda.Runtime.PYTHON_3_9,
+            runtime=_lambda.Runtime.PYTHON_3_11,
             handler="index.handler",
             code=_lambda.Code.from_asset(
                 "./functions/get_iiif_manifest",
                 bundling={
-                    "image": _lambda.Runtime.PYTHON_3_9.bundling_image,
+                    "image": _lambda.Runtime.PYTHON_3_11.bundling_image,
                     "bundling_file_access": BundlingFileAccess.VOLUME_COPY,
                     "command": [
                         "bash",
@@ -83,12 +83,42 @@ class StepFunctionsConstruct(Construct):
                 },
             ),
             timeout=Duration.minutes(2),
-            environment={"BUCKET": data_bucket.bucket_name},
+            environment={"DEST_BUCKET": data_bucket.bucket_name, "DEST_PREFIX": "data/iiif/"},
+        )
+
+        # Lambda function for processing EAD XML files
+        process_ead_function = _lambda.Function(
+            self,
+            "process_ead_function",
+            runtime=_lambda.Runtime.PYTHON_3_11,
+            handler="index.handler",
+            code=_lambda.Code.from_asset(
+                "./functions/ead",
+                bundling={
+                    "image": _lambda.Runtime.PYTHON_3_11.bundling_image,
+                    "bundling_file_access": BundlingFileAccess.VOLUME_COPY,
+                    "command": [
+                        "bash",
+                        "-c",
+                        "pip install -r requirements.txt -t /asset-output && cp -r . /asset-output",
+                    ],
+                },
+            ),
+            timeout=Duration.minutes(3),
+            environment={
+                "DEST_BUCKET": data_bucket.bucket_name,
+                "DEST_PREFIX": "data/ead/",
+            },
+            memory_size=512,
         )
 
         # Grant the Lambda function read/write access to S3
         data_bucket.grant_read(fetch_iiif_manifest_function)
         data_bucket.grant_put(fetch_iiif_manifest_function)
+
+        # Grant EAD Lambda read/write access to S3
+        data_bucket.grant_read(process_ead_function)
+        data_bucket.grant_put(process_ead_function)
 
         # IAM Role for Step Functions to access S3 and invoke Lambda
         step_functions_role = iam.Role(
@@ -110,14 +140,14 @@ class StepFunctionsConstruct(Construct):
         step_functions_role.add_to_policy(
             iam.PolicyStatement(
                 actions=["lambda:InvokeFunction"],
-                resources=[fetch_iiif_manifest_function.function_arn],
+                resources=[fetch_iiif_manifest_function.function_arn, process_ead_function.function_arn],
             )
         )
 
-        # Add permissions for the Step Function role
+        # Permission for Bedrock data sync
         step_functions_role.add_to_policy(iam.PolicyStatement(actions=["bedrock:StartIngestionJob"], resources=["*"]))
 
-        # Also add this permission
+        # Permission to write results to S3
         step_functions_role.add_to_policy(
             iam.PolicyStatement(
                 actions=["s3:PutObject"], resources=[data_bucket.arn_for_objects("step-function-results/*")]
@@ -130,12 +160,57 @@ class StepFunctionsConstruct(Construct):
             principal=iam.ServicePrincipal("states.amazonaws.com"),
         )
 
+        # Permission for EAD Lambda
+        process_ead_function.add_permission(
+            "AllowStepFunctionsInvoke",
+            principal=iam.ServicePrincipal("states.amazonaws.com"),
+        )
+
         manifest_fetch_concurrency = self.node.try_get_context("manifest_fetch_concurrency") or 2
+        ead_process_concurrency = self.node.try_get_context("ead_process_concurrency") or 10
+
+        # Define EAD processing workflow using Distributed Map
+        ead_distributed_map_state = sfn.CustomState(
+            self,
+            "EadDistributedMapWithItemReader",
+            state_json={
+                "Type": "Map",
+                "ItemReader": {
+                    "Resource": "arn:aws:states:::s3:listObjectsV2",
+                    "Parameters": {"Bucket.$": "$.s3.Bucket", "Prefix.$": "$.s3.Prefix"},
+                },
+                "Parameters": {"sourceBucket.$": "$.s3.Bucket", "item.$": "$$.Map.Item.Value"},
+                "MaxConcurrency": ead_process_concurrency,
+                "ItemProcessor": {
+                    "ProcessorConfig": {"Mode": "DISTRIBUTED", "ExecutionType": "STANDARD"},
+                    "StartAt": "ProcessEadFile",
+                    "States": {
+                        "ProcessEadFile": {
+                            "Type": "Task",
+                            "Resource": "arn:aws:states:::lambda:invoke",
+                            "Parameters": {
+                                "FunctionName": process_ead_function.function_arn,
+                                "Payload": {"bucket.$": "$.sourceBucket", "key.$": "$.item.Key"},
+                            },
+                            "TimeoutSeconds": 43200,  # 12 hours
+                            "End": True,
+                        }
+                    },
+                },
+                "ResultWriter": {
+                    "Resource": "arn:aws:states:::s3:putObject",
+                    "Parameters": {
+                        "Bucket": data_bucket.bucket_name,
+                        "Prefix": "step-function-results/ead-processing/",
+                    },
+                },
+            },
+        )
 
         # Define Distributed Map with ItemReader using a raw JSON state definition
         distributed_map_state = sfn.CustomState(
             self,
-            "DistributedMapWithItemReader",
+            "IIIFDistributedMapWithItemReader",
             state_json={
                 "Type": "Map",
                 "ItemReader": {
@@ -164,12 +239,15 @@ class StepFunctionsConstruct(Construct):
                 },
                 "ResultWriter": {
                     "Resource": "arn:aws:states:::s3:putObject",
-                    "Parameters": {"Bucket": data_bucket.bucket_name, "Prefix": "step-function-results/"},
+                    "Parameters": {
+                        "Bucket": data_bucket.bucket_name,
+                        "Prefix": "step-function-results/iiif-processing",
+                    },
                 },
             },
         )
 
-        # Add bedrock knowledge base ingestion task
+        # Add bedrock knowledge base ingestion task - shared between both workflows
         start_ingestion = sfn.CustomState(
             self,
             "StartBedrockIngestion",
@@ -185,9 +263,21 @@ class StepFunctionsConstruct(Construct):
 
         # Define the success and failure states
         success = sfn.Succeed(self, "TaskCompleted")
-        _failure = sfn.Fail(self, "TaskFailed", error="TaskFailedError", cause="Task execution failed")
+        failure = sfn.Fail(self, "TaskFailed", error="TaskFailedError", cause="Task execution failed")
 
-        definition = run_task.next(distributed_map_state).next(start_ingestion).next(success)
+        # Add a Choice state to determine the workflow
+        choice_state = sfn.Choice(self, "DataTypeChoice")
+        choice_state.when(
+            sfn.Condition.string_equals("$.workflowType", "iiif"),
+            run_task.next(distributed_map_state).next(start_ingestion),
+        )
+        choice_state.when(
+            sfn.Condition.string_equals("$.workflowType", "ead"),
+            ead_distributed_map_state.next(start_ingestion),
+        )
+        choice_state.otherwise(failure)
+
+        definition = choice_state.afterwards().next(success)
 
         self.state_machine = sfn.StateMachine(
             self, "OsdpStackSpinup", definition=definition, timeout=Duration.hours(12), role=step_functions_role
@@ -203,18 +293,52 @@ class StepFunctionsConstruct(Construct):
             )
         )
 
+        # Get workflow type and source info from data_config
+        workflow_type = data_config.get("type")
+
+        # Configure environment variables for the trigger based on data_config
+        env_vars = {
+            "STATE_MACHINE_ARN": self.state_machine.state_machine_arn,
+            "BUCKET": data_bucket.bucket_name,
+            "WORKFLOW_TYPE": workflow_type,
+        }
+
+        # Add type-specific environment variables
+        if workflow_type == "iiif":
+            env_vars["SOURCE_COLLECTION"] = data_config.get("collection_url", "")
+            env_vars["COLLECTION_FILENAME"] = "manifests.csv"
+        elif workflow_type == "ead":
+            s3_config = data_config.get("s3", {})
+            env_vars["SOURCE_PREFIX"] = s3_config.get("prefix", "")
+            env_vars["SOURCE_BUCKET"] = s3_config.get("bucket", "")
+            # For EAD workflow, source bucket is external, we need to grant permissions
+            if "bucket" in s3_config:
+                step_functions_role.add_to_policy(
+                    iam.PolicyStatement(
+                        actions=["s3:ListBucket", "s3:GetObject"],
+                        resources=[
+                            f"arn:aws:s3:::{s3_config['bucket']}",
+                            f"arn:aws:s3:::{s3_config['bucket']}/*",
+                        ],
+                    )
+                )
+                process_ead_function.role.add_to_policy(  # Changed: Using correct method add_to_policy on Lambda's role
+                    iam.PolicyStatement(
+                        actions=["s3:ListBucket", "s3:GetObject"],
+                        resources=[
+                            f"arn:aws:s3:::{s3_config['bucket']}",
+                            f"arn:aws:s3:::{s3_config['bucket']}/*",
+                        ],
+                    )
+                )
+
         # Add a Lambda trigger for Step Functions execution
         self.step_function_trigger = triggers.TriggerFunction(
             self,
             "TriggerStepFunction",
-            runtime=_lambda.Runtime.PYTHON_3_9,
+            runtime=_lambda.Runtime.PYTHON_3_10,
             handler="index.handler",
-            environment={
-                "STATE_MACHINE_ARN": self.state_machine.state_machine_arn,
-                "COLLECTION_URL": collection_url,
-                "BUCKET": data_bucket.bucket_name,
-                "KEY": "manifests.csv",
-            },
+            environment=env_vars,
             code=_lambda.Code.from_asset("./functions/step_function_trigger"),
             timeout=Duration.minutes(3),
             initial_policy=[
@@ -232,3 +356,4 @@ class StepFunctionsConstruct(Construct):
         self.step_function_trigger.execute_after(fetch_iiif_manifest_function)
         self.step_function_trigger.execute_after(knowledge_base)
         self.step_function_trigger.execute_after(data_source)
+        self.step_function_trigger.execute_after(process_ead_function)

@@ -10,7 +10,7 @@ def stack_and_template():
     app = core.App()
     app.node.set_context("stack_prefix", "alice")
     app.node.set_context("tags", {"foo": "bar", "environment": "dev"})
-    app.node.set_context("collection_url", "http://example.com")
+    app.node.set_context("data", {"type": "iiif", "collection_url": "http://example.com"})
     app.node.set_context(
         "embedding_model_arn", "arn:aws:sagemaker:us-east-1:123456789012:model/bedrock-embedding-model"
     )
@@ -111,7 +111,7 @@ def test_function_invoker_role_created():
     app = core.App()
     app.node.set_context("stack_prefix", "alice")
     app.node.set_context("tags", {"foo": "bar", "environment": "dev"})
-    app.node.set_context("collection_url", "http://example.com")
+    app.node.set_context("data", {"type": "iiif", "collection_url": "http://example.com"})
     app.node.set_context(
         "embedding_model_arn", "arn:aws:sagemaker:us-east-1:123456789012:model/bedrock-embedding-model"
     )

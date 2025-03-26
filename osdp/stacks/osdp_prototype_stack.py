@@ -119,13 +119,16 @@ class OsdpPrototypeStack(Stack):
             function_invoker_principal=ui_function_invoke_principal,
         )
 
+        # Get data configuration from context
+        data_config = self.node.try_get_context("data")
+
         # Instantiate the Step Functions construct
         _step_functions_construct = StepFunctionsConstruct(
             self,
             "StepFunctionsConstruct",
             ecs_construct=ecs_construct,
             data_bucket=data_bucket,
-            collection_url=self.node.try_get_context("collection_url"),
+            data_config=data_config,
             knowledge_base=knowledge_base_construct.knowledge_base,  # Pass the actual construct
             data_source=knowledge_base_construct.s3_data_source,  # If you expose this
             db_cluster=database_construct.db_cluster,  # Pass DB cluster
