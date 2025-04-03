@@ -130,7 +130,24 @@ Since the `cdk.json` file is generally committed to source control, it should ge
 ##### Required context values
 
 - `stack_prefix` (str) - will be appended to the beginning of the CloudFormation stack on deploy. (*For NU devs this is not needed, it will use the `DEV_PREFIX` env var in AWS.)
-- `collection_url` (str)- the url of the IIIF collection to load during deployment. There is a small collection (6 items) in the `cdk.json` file, but you will want to change or override on the command line.
+- `data` (dist)- Describes either the IIIF collection url or S3 location of EAD source XML files.
+Example for IIIF: 
+```json
+"data": {
+    "type": "iiif",
+    "collection_url": "https://api.dc.library.northwestern.edu/api/v2/collections/ecacd539-fe38-40ec-bbc0-590acee3d4f2?as=iiif"
+}
+```
+Example for EAD:
+```json
+"data": {
+    "type": "ead",
+    "s3": {
+        "bucket": "my-bucket",
+        "prefix": "subfolder"
+    }
+}
+```
 - `embedding_model_arn` (str) - Embedding model to use for Bedrock Knowledgebase
 - `foundation_model_arn` (str) - Foundation model to use for Bedrock RetreiveAndGenerate invocations
 
@@ -183,6 +200,34 @@ Then deploy your stack:
 cdk deploy yourprefix-OSDP-Prototype
 ```
 
+#### Loading additional data
+
+Additional data can be loaded by manually invoking the step function.
+
+*Note that to load EAD data if you had initially run a IIIF load you will need to grant S3 `GetObject` and `ListObjects` permissions to both the state machine and the EAD processing lambda.*
+
+Example state machine input for IIIF load:
+```json
+{
+  "workflowType": "iiif",
+  "collection_url": "https://api.dc.library.northwestern.edu/api/v2/collections/ecacd539-fe38-40ec-bbc0-590acee3d4f2?as=iiif",
+  "s3": {
+    "Bucket": "yourstackname-osdp-prototype-xxxxxxxx", 
+    "Key": "manifests.csv"
+  }
+}
+```
+Example state machine input for EAD load: 
+```json
+{
+  "s3": {
+
+    "SourceBucket": "my-bucket",
+    "SourcePrefix": "my-prefix"
+  },
+  "workflowType": "ead"
+}
+```
 
 #### Testing
 

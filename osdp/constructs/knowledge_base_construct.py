@@ -101,7 +101,7 @@ class KnowledgeBaseConstruct(Construct):
             data_source_configuration=bedrock.CfnDataSource.DataSourceConfigurationProperty(
                 type="S3",
                 s3_configuration=bedrock.CfnDataSource.S3DataSourceConfigurationProperty(
-                    bucket_arn=data_bucket.bucket_arn, inclusion_prefixes=["iiif/"]
+                    bucket_arn=data_bucket.bucket_arn, inclusion_prefixes=["data/"]
                 ),
             ),
             name="OsdpS3DataSource",
