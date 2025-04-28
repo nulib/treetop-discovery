@@ -12,7 +12,7 @@ class PipelineStack(cdk.Stack):
 
         # Define the CodePipeline source
         source = pipelines.CodePipelineSource.git_hub(
-            "nulib/osdp-prototype-cdk",
+            "nulib/treetop-discovery",
             "main",
             authentication=SecretValue.secrets_manager("osdp/github-token"),
         )
