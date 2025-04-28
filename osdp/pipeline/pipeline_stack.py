@@ -34,7 +34,7 @@ class PipelineStack(cdk.Stack):
                 ". .venv/bin/activate",
                 "cd osdp",
                 "cdk --version",
-                "cdk synth $(node -e \"console.log(process.env.CONFIG_PARAM || '')\")",
+                "cdk synth ${CONFIG_PARAM}",
             ],
             primary_output_directory="osdp/cdk.out",
             env={"CONFIG_PARAM": config_param.string_value},
