@@ -16,6 +16,11 @@ cli_stack_prefix = app.node.try_get_context("stack_prefix")
 env_stack_prefix = os.environ.get("DEV_PREFIX")
 current_stack_prefix = cli_stack_prefix or env_stack_prefix
 
+# Print all context variables for debugging
+print("DEBUG: All context variables in app:")
+for key, value in app.node.context.items():
+    print(f"   {key}: {value}")
+
 # Load TOML configuration only if we're NOT in the pipeline deployment
 # (For staging deployment, we get params from SSM)
 if current_stack_prefix != "staging":
@@ -37,6 +42,8 @@ if current_stack_prefix != "staging":
         sys.exit(f"Error: Config file '{config_file_path}' contains invalid TOML.")
 else:
     print("Detected 'staging' deployment - skipping config.toml loading as parameters come from SSM")
+    # Print CLI args for debugging
+    print(f"DEBUG: CLI args from context: {sys.argv}")
 
 # All the required context keys
 required_context = ["embedding_model_arn", "foundation_model_arn", "data"]
@@ -45,6 +52,7 @@ required_context = ["embedding_model_arn", "foundation_model_arn", "data"]
 for key in required_context:
     value = app.node.try_get_context(key)
     if not value:
+        print(f"DEBUG: Missing context '{key}' - current context keys: {list(app.node.context.keys())}")
         sys.exit(
             f"Error: Missing required context variable '{key}'. "
             f"Please pass it via the CLI (e.g., -c {key}=your_value) or define it in cdk.json."

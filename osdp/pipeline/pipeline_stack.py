@@ -34,7 +34,10 @@ class PipelineStack(cdk.Stack):
                 ". .venv/bin/activate",
                 "cd osdp",
                 "cdk --version",
-                "cdk synth ${CONFIG_PARAM}",
+                # Print the CONFIG_PARAM for debugging
+                'echo "Using config params: ${CONFIG_PARAM}"',
+                # Use eval and quoting to ensure the parameter is correctly expanded
+                'eval "cdk synth ${CONFIG_PARAM}"',
             ],
             primary_output_directory="osdp/cdk.out",
             env={"CONFIG_PARAM": config_param.string_value},
