@@ -47,7 +47,7 @@ required_context = ["embedding_model_arn", "foundation_model_arn", "data"]
 for key in required_context:
     value = app.node.try_get_context(key)
     if not value:
-        print(f"DEBUG: Missing context '{key}' - current context keys: {list(app.node.context.keys())}")
+        print(f"DEBUG: Missing context '{key}'")
         sys.exit(
             f"Error: Missing required context variable '{key}'. "
             f"Please pass it via the CLI (e.g., -c {key}=your_value) or define it in cdk.json."
