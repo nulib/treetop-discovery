@@ -16,11 +16,6 @@ cli_stack_prefix = app.node.try_get_context("stack_prefix")
 env_stack_prefix = os.environ.get("DEV_PREFIX")
 current_stack_prefix = cli_stack_prefix or env_stack_prefix
 
-# Print all context variables for debugging
-print("DEBUG: All context variables in app:")
-for key, value in app.node.context.items():
-    print(f"   {key}: {value}")
-
 # Load TOML configuration only if we're NOT in the pipeline deployment
 # (For staging deployment, we get params from SSM)
 if current_stack_prefix != "staging":
