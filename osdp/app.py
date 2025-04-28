@@ -38,42 +38,37 @@ if current_stack_prefix != "staging":
 else:
     print("Detected 'staging' deployment - skipping config.toml loading as parameters come from SSM")
 
-# Only validate context keys if we're not in staging deployment
-# For staging, these are provided via CLI parameters from SSM
-if current_stack_prefix != "staging":
-    # All the required context keys
-    required_context = ["embedding_model_arn", "foundation_model_arn", "data"]
+# All the required context keys
+required_context = ["embedding_model_arn", "foundation_model_arn", "data"]
 
-    # Validate that each required context is provided
-    for key in required_context:
-        value = app.node.try_get_context(key)
-        if not value:
-            sys.exit(
-                f"Error: Missing required context variable '{key}'. "
-                f"Please pass it via the CLI (e.g., -c {key}=your_value) or define it in cdk.json."
-            )
-
-    # Validate the data structure
-    data = app.node.try_get_context("data")
-    data_type = data.get("type")
-    if data_type not in ["iiif", "ead"]:
-        sys.exit(f"Error: Invalid data type '{data_type}'. The data.type must be either 'iiif' or 'ead'.")
-
-    if data_type == "iiif" and not data.get("collection_url"):
+# Validate that each required context is provided
+for key in required_context:
+    value = app.node.try_get_context(key)
+    if not value:
         sys.exit(
-            "Error: Missing required field 'collection_url' for data type 'iiif'. "
-            "Please provide it in the 'data' context object."
+            f"Error: Missing required context variable '{key}'. "
+            f"Please pass it via the CLI (e.g., -c {key}=your_value) or define it in cdk.json."
         )
 
-    if data_type == "ead":
-        s3_config = data.get("s3", {})
-        if not s3_config.get("bucket") or not s3_config.get("prefix"):
-            sys.exit(
-                "Error: Missing required S3 configuration for data type 'ead'. "
-                "Please provide 'bucket' and 'prefix' in the 'data.s3' context object."
-            )
-else:
-    print("Detected 'staging' deployment - skipping context validation as parameters come from SSM")
+# Validate the data structure
+data = app.node.try_get_context("data")
+data_type = data.get("type")
+if data_type not in ["iiif", "ead"]:
+    sys.exit(f"Error: Invalid data type '{data_type}'. The data.type must be either 'iiif' or 'ead'.")
+
+if data_type == "iiif" and not data.get("collection_url"):
+    sys.exit(
+        "Error: Missing required field 'collection_url' for data type 'iiif'. "
+        "Please provide it in the 'data' context object."
+    )
+
+if data_type == "ead":
+    s3_config = data.get("s3", {})
+    if not s3_config.get("bucket") or not s3_config.get("prefix"):
+        sys.exit(
+            "Error: Missing required S3 configuration for data type 'ead'. "
+            "Please provide 'bucket' and 'prefix' in the 'data.s3' context object."
+        )
 
 # We already determined stack_prefix at the beginning of the file
 # Just use the value we determined earlier for consistency
