@@ -17,7 +17,7 @@ env_stack_prefix = os.environ.get("DEV_PREFIX")
 current_stack_prefix = cli_stack_prefix or env_stack_prefix
 
 # Load TOML configuration only if we're NOT in the pipeline deployment
-# (For staging deployment, we get params from SSM)
+# (For staging deployment, we get params from SSM/CLI)
 if current_stack_prefix != "staging":
     # Load TOML configuration from config.toml
     # This file should be in the same directory as this script
@@ -36,9 +36,24 @@ if current_stack_prefix != "staging":
     except tomllib.TOMLDecodeError:
         sys.exit(f"Error: Config file '{config_file_path}' contains invalid TOML.")
 else:
-    print("Detected 'staging' deployment - skipping config.toml loading as parameters come from SSM")
-    # Print CLI args for debugging
-    print(f"DEBUG: CLI args from context: {sys.argv}")
+    print("Detected 'staging' deployment - parameters come from SSM/CLI")
+    # Manually construct the 'data' dictionary from flat CLI context if needed
+    data_context = app.node.try_get_context("data")
+    if data_context is None or not isinstance(data_context, dict):
+        print("Constructing 'data' context from individual CLI parameters...")
+        data_type_cli = app.node.try_get_context("data.type")
+        if data_type_cli:
+            constructed_data = {"type": data_type_cli}
+            if data_type_cli == "iiif":
+                constructed_data["collection_url"] = app.node.try_get_context("data.collection_url")
+            elif data_type_cli == "ead":
+                constructed_data["s3"] = {
+                    "bucket": app.node.try_get_context("data.s3.bucket"),
+                    "prefix": app.node.try_get_context("data.s3.prefix"),
+                }
+            app.node.set_context("data", constructed_data)
+        else:
+            print("Warning: 'data.type' not found in CLI context.")
 
 # All the required context keys
 required_context = ["embedding_model_arn", "foundation_model_arn", "data"]
