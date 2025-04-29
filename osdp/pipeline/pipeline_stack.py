@@ -40,17 +40,13 @@ class PipelineStack(cdk.Stack):
             commands=[
                 "npm install -g aws-cdk",
                 "pip install uv",
-                # Install jq using dnf (common in Amazon Linux 2/2023) or apt-get (Ubuntu)
-                # The '|| true' prevents failure if one command doesn't exist or jq is already installed
                 "sudo dnf install -y jq || true",
                 "sudo dnf install -y libxcrypt-compat || true",
                 "uv sync --no-dev",
                 ". .venv/bin/activate",
                 "cd osdp",
                 "cdk --version",
-                # Fetch the JSON config from SSM within the shell
                 "echo 'Fetching config from SSM parameter: $CONFIG_PARAM_NAME'",
-                # The complex shell command using jq to parse JSON and build synth args
                 """
                 CONFIG_JSON=$(aws ssm get-parameter \\
                   --name "$CONFIG_PARAM_NAME" --query Parameter.Value --output text) && \\
