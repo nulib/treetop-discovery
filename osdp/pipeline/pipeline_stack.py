@@ -17,51 +17,21 @@ class PipelineStack(cdk.Stack):
             authentication=SecretValue.secrets_manager("osdp/github-token"),
         )
 
-        # Fetch the single configuration JSON string from SSM Parameter Store
-        config_json_param = ssm.StringParameter.from_string_parameter_name(
-            self,
-            "ConfigJsonParam",
-            "/osdp/staging/config",  # Parameter containing the JSON config
-        )
+        # Get stack_prefix and other configs from parameter store
+        config_param = ssm.StringParameter.from_string_parameter_name(self, "ConfigParam", "/osdp/staging/config")
 
-        # CDK Tokens cannot be processed during synthesis phase directly in Python logic.
-        # We need to pass the SSM parameter reference into the ShellStep environment
-        # and process it within the shell commands using `aws ssm get-parameter`.
-        # Alternatively, and more cleanly, pass individual parameters as done previously.
-        # However, sticking to the "single entity" requirement, we'll try a different approach:
-        # Pass the parameter name to the ShellStep and resolve it inside the shell commands.
-
-        # Define the synth step.
         synth = pipelines.ShellStep(
             "Synth",
             input=source,
-            # Pass the SSM parameter name as an environment variable
-            env={"CONFIG_PARAM_NAME": config_json_param.parameter_name},
             commands=[
                 "npm install -g aws-cdk",
                 "pip install uv",
-                "sudo dnf install -y jq || true",
                 "sudo dnf install -y libxcrypt-compat || true",
                 "uv sync --no-dev",
                 ". .venv/bin/activate",
                 "cd osdp",
                 "cdk --version",
-                "echo 'Fetching config from SSM parameter: $CONFIG_PARAM_NAME'",
-                """
-                CONFIG_JSON=$(aws ssm get-parameter \\
-                  --name "$CONFIG_PARAM_NAME" --query Parameter.Value --output text) && \\
-                SYNTH_ARGS=$(echo "$CONFIG_JSON" | jq -r '
-                  to_entries | map(
-                    if .key == "data" then
-                      .value | to_entries | map("-c data.\\(.key)='\\''\(.value)'\\''") | join(" ")
-                    else
-                      "-c \\(.key)='\\''\(.value)'\\''"
-                    end
-                  ) | join(" ")
-                ') && \\
-                echo "Running cdk synth with args: $SYNTH_ARGS" && \\
-                cdk synth $SYNTH_ARGS
-                """,
+                f"cdk synth {config_param.string_value}",
             ],
             primary_output_directory="osdp/cdk.out",
         )
