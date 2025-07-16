@@ -32,9 +32,6 @@ jobs:
         with:
           registry-type: public
 
-      - name: Copy pyproject.toml to iiif directory
-        run: cp pyproject.toml iiif/
-
       - name: Build, tag, and push docker image to Amazon ECR Public
         env:
           REGISTRY: ${{ steps.login-ecr-public.outputs.registry }}
@@ -42,6 +39,5 @@ jobs:
           REPOSITORY: osdp-iiif-fetcher
           IMAGE_TAG: latest
         run: |
-          cd iiif
-          docker build -t $REGISTRY/$REGISTRY_ALIAS/$REPOSITORY:$IMAGE_TAG .
+          docker build -t $REGISTRY/$REGISTRY_ALIAS/$REPOSITORY:$IMAGE_TAG -f iiif/Dockerfile .
           docker push $REGISTRY/$REGISTRY_ALIAS/$REPOSITORY:$IMAGE_TAG

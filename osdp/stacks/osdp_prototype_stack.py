@@ -19,8 +19,6 @@ from constructs.knowledge_base_construct import KnowledgeBaseConstruct
 from constructs.step_functions_construct import StepFunctionsConstruct
 from constructs.ui_construct import UIConstruct
 
-ECR_IMAGE = "public.ecr.aws/nulib-staging/osdp-iiif-fetcher:latest"
-
 
 class OsdpPrototypeStack(Stack):
     def __init__(
@@ -60,8 +58,15 @@ class OsdpPrototypeStack(Stack):
             auto_delete_objects=True,
         )
 
+        # Get ECR configuration from context
+        ecr_config = self.node.try_get_context("ecr")
+        if not ecr_config:
+            raise ValueError("ECR configuration is missing from context")
+
+        ecr_image_uri = f"{ecr_config['registry']}/{ecr_config['repository']}:{ecr_config['tag']}"
+
         # Instantiate the ECS construct
-        ecs_construct = EcsConstruct(self, "EcsConstruct", data_bucket=data_bucket, ecr_image=ECR_IMAGE)
+        ecs_construct = EcsConstruct(self, "EcsConstruct", data_bucket=data_bucket, ecr_image=ecr_image_uri)
 
         # Database construct
         database_construct = DatabaseConstruct(self, "DatabaseConstruct")
