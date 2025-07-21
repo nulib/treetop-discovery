@@ -215,7 +215,7 @@ class StepFunctionsConstruct(Construct):
                 "Type": "Map",
                 "ItemReader": {
                     "Resource": "arn:aws:states:::s3:getObject",
-                    "ReaderConfig": {"InputType": "CSV", "CSVHeaderLocation": "GIVEN", "CSVHeaders": ["uri", "text"]},
+                    "ReaderConfig": {"InputType": "CSV", "CSVHeaderLocation": "GIVEN", "CSVHeaders": ["uri"]},
                     "Parameters": {"Bucket.$": "$.s3.Bucket", "Key.$": "$.s3.Key"},
                 },
                 "MaxConcurrency": manifest_fetch_concurrency,

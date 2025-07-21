@@ -1,5 +1,3 @@
-import csv
-import io
 import logging
 import os
 
@@ -19,17 +17,8 @@ def fetch_collection(url):
         raise
 
     logger.info(f"Found {len(manifests)} manifests and {len(collections)} collections.")
-    results = []
-    for manifest_url in manifests:
-        try:
-            chunks = client.create_manifest_chunks([manifest_url])
-            for chunk in chunks:
-                results.append({"uri": manifest_url, "text": chunk["text"]})
-        except Exception as e:
-            logger.error(f"Could not process manifest {manifest_url}: {e}")
-            continue
 
-    return results
+    return manifests
 
 
 def main():
@@ -43,24 +32,14 @@ def main():
         logger.error("No BUCKET_NAME environment variable set")
         return
 
-    data = fetch_collection(url)
-
-    if not data:
-        logger.warning("No data was fetched or processed. Exiting.")
-        return
-
-    output = io.StringIO()
-    fieldnames = ["uri", "text"]
-    writer = csv.DictWriter(output, fieldnames=fieldnames)
-    writer.writeheader()
-    writer.writerows(data)
-    csv_data = output.getvalue()
+    manifests_urls = fetch_collection(url)
+    data = "\n".join(manifests_urls)
 
     try:
         s3 = boto3.client("s3")
 
         respone = s3.put_object(
-            Body=bytes(csv_data, encoding="utf-8"),
+            Body=bytes(data, encoding="utf-8"),
             Bucket=bucket_name,
             Key="manifests.csv",
             ContentType="text/csv",
