@@ -36,11 +36,11 @@ def handler(event, _context):
         manifest_data = client.parse_manifest(uri, strip_tags=True)
         if not manifest_data:
             return {"statusCode": 400, "body": json.dumps({"message": "Failed to parse IIIF manifest."})}
-        
+
         text = manifest_data.get("text", "")
         if not text:
             return {"statusCode": 400, "body": json.dumps({"message": "No text content found in manifest."})}
-            
+
     except Exception as e:
         logger.error(f"Error parsing IIIF manifest: {e}")
         return {"statusCode": 500, "body": json.dumps({"message": "Error parsing IIIF manifest", "error": str(e)})}
