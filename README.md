@@ -222,7 +222,7 @@ docker push public.ecr.aws/nulib-staging/osdp-iiif-fetcher:[tag]
 ```
 
 > [!NOTE]
-> Replace `[tag]` with the new version tag for the image.
+> Replace `[tag]` with the new version tag for the image. The default should be "latest"
 
 ### OSDP Prototype Stack (CDK)
 
