@@ -39,7 +39,8 @@ else:
     print("Detected 'staging' deployment - parameters come from SSM/CLI")
     # Manually construct the 'data' dictionary from flat CLI context if needed
     data_context = app.node.try_get_context("data")
-    if data_context is None or not isinstance(data_context, dict):
+    ecr_context = app.node.try_get_context("ecr")
+    if (data_context is None or not isinstance(data_context, dict)) and (ecr_context is not None):
         print("Constructing 'data' context from individual CLI parameters...")
         data_type_cli = app.node.try_get_context("data.type")
         if data_type_cli:
@@ -52,6 +53,12 @@ else:
                     "prefix": app.node.try_get_context("data.s3.prefix"),
                 }
             app.node.set_context("data", constructed_data)
+            app.node.set_context("ecr", {
+                "registry": app.node.try_get_context("ecr.registry")
+                "respository": app.node.try_get_context("ecr.repository")
+                "tag": app.node.try_get_context("ecr.tag")
+            })
+            # -c ecr.registry=public.ecr.aws -c ecr.repository=nulib-staging/osdp-iiif-fetcher -c ecr.tag=latest
         else:
             print("Warning: 'data.type' not found in CLI context.")
 
