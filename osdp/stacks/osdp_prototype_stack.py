@@ -19,8 +19,6 @@ from constructs.knowledge_base_construct import KnowledgeBaseConstruct
 from constructs.step_functions_construct import StepFunctionsConstruct
 from constructs.ui_construct import UIConstruct
 
-ECR_IMAGE = "public.ecr.aws/nulib-staging/osdp-iiif-fetcher:latest"
-
 
 class OsdpPrototypeStack(Stack):
     def __init__(
@@ -60,8 +58,19 @@ class OsdpPrototypeStack(Stack):
             auto_delete_objects=True,
         )
 
-        # Instantiate the ECS construct
-        ecs_construct = EcsConstruct(self, "EcsConstruct", data_bucket=data_bucket, ecr_image=ECR_IMAGE)
+        # Get ECR configuration from context and data config to determine if ECS is needed
+        data_config = self.node.try_get_context("data")
+        workflow_type = data_config.get("type") if data_config else None
+
+        ecs_construct = None
+        if workflow_type == "iiif":
+            # Only require ECR config for IIIF workflows that need ECS
+            ecr_config = self.node.try_get_context("ecr")
+            if not ecr_config:
+                raise ValueError("ECR configuration is required for IIIF workflows")
+
+            ecr_image_uri = f"{ecr_config['registry']}/{ecr_config['repository']}:{ecr_config['tag']}"
+            ecs_construct = EcsConstruct(self, "EcsConstruct", data_bucket=data_bucket, ecr_image=ecr_image_uri)
 
         # Database construct
         database_construct = DatabaseConstruct(self, "DatabaseConstruct")
@@ -115,9 +124,6 @@ class OsdpPrototypeStack(Stack):
             cognito_user_pool_client_id=self.api_construct.user_pool_client.user_pool_client_id,
             function_invoker_principal=ui_function_invoke_principal,
         )
-
-        # Get data configuration from context
-        data_config = self.node.try_get_context("data")
 
         # Instantiate the Step Functions construct
         _step_functions_construct = StepFunctionsConstruct(

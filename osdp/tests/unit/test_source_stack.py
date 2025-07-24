@@ -12,6 +12,14 @@ def stack_and_template():
     app.node.set_context("tags", {"foo": "bar", "environment": "dev"})
     app.node.set_context("data", {"type": "iiif", "collection_url": "http://example.com"})
     app.node.set_context(
+        "ecr",
+        {
+            "registry": "public.ecr.aws",
+            "repository": "nulib-staging/osdp-iiif-fetcher",
+            "tag": "latest",
+        },
+    )
+    app.node.set_context(
         "embedding_model_arn", "arn:aws:sagemaker:us-east-1:123456789012:model/bedrock-embedding-model"
     )
     app.node.set_context(
@@ -115,6 +123,14 @@ def test_function_invoker_role_created():
     )
     app.node.set_context(
         "foundation_model_arn", "arn:aws:sagemaker:us-east-1:123456789012:model/bedrock-embedding-model"
+    )
+    app.node.set_context(
+        "ecr",
+        {
+            "registry": "public.ecr.aws",
+            "repository": "nulib-staging/osdp-iiif-fetcher",
+            "tag": "latest",
+        },
     )
     app.node.set_context("aws:cdk:bundling-stacks", [])  # Disable bundling to speed up tests
     github_action_arn = "arn:aws:iam::123456789012:oidc-provider/token.actions.githubusercontent.com"
