@@ -61,14 +61,14 @@ class OsdpPrototypeStack(Stack):
         # Get ECR configuration from context and data config to determine if ECS is needed
         data_config = self.node.try_get_context("data")
         workflow_type = data_config.get("type") if data_config else None
-        
+
         ecs_construct = None
         if workflow_type == "iiif":
             # Only require ECR config for IIIF workflows that need ECS
             ecr_config = self.node.try_get_context("ecr")
             if not ecr_config:
                 raise ValueError("ECR configuration is required for IIIF workflows")
-            
+
             ecr_image_uri = f"{ecr_config['registry']}/{ecr_config['repository']}:{ecr_config['tag']}"
             ecs_construct = EcsConstruct(self, "EcsConstruct", data_bucket=data_bucket, ecr_image=ecr_image_uri)
 

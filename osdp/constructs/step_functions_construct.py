@@ -269,14 +269,14 @@ class StepFunctionsConstruct(Construct):
 
         # Add a Choice state to determine the workflow
         choice_state = sfn.Choice(self, "DataTypeChoice")
-        
+
         # Only add IIIF workflow if ECS construct is available
         if run_task:
             choice_state.when(
                 sfn.Condition.string_equals("$.workflowType", "iiif"),
                 run_task.next(distributed_map_state).next(start_ingestion),
             )
-        
+
         choice_state.when(
             sfn.Condition.string_equals("$.workflowType", "ead"),
             ead_distributed_map_state.next(start_ingestion),
