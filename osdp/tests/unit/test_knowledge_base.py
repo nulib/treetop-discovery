@@ -9,15 +9,7 @@ def stack_and_template():
     app = core.App()
     app.node.set_context("stack_prefix", "alice")
     app.node.set_context("tags", {"foo": "bar", "environment": "dev"})
-    app.node.set_context("data", {"type": "iiif", "collection_url": "http://example.com"})
-    app.node.set_context(
-        "ecr",
-        {
-            "registry": "public.ecr.aws",
-            "repository": "nulib-staging/osdp-iiif-fetcher",
-            "tag": "latest",
-        },
-    )
+    app.node.set_context("data", {"type": "ead", "s3": {"bucket": "test-bucket", "prefix": "test-prefix/"}})
     app.node.set_context(
         "embedding_model_arn", "arn:aws:sagemaker:us-east-1:123456789012:model/bedrock-embedding-model"
     )

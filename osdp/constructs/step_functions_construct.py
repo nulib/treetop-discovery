@@ -38,31 +38,33 @@ class StepFunctionsConstruct(Construct):
     ) -> None:
         super().__init__(scope, id)
 
-        # Create the ECS Run Task state
-        run_task = sfn_tasks.EcsRunTask(
-            self,
-            "OsdpRunFargateManifestFetcherTask",
-            integration_pattern=sfn.IntegrationPattern.RUN_JOB,  # Wait for task completion
-            cluster=ecs_construct.cluster,
-            task_definition=ecs_construct.task_definition,
-            container_overrides=[
-                sfn_tasks.ContainerOverride(
-                    container_definition=ecs_construct.container,
-                    environment=[
-                        {
-                            "name": "COLLECTION_URL",
-                            "value": sfn.JsonPath.string_at("$.collection_url"),
-                        },
-                        {"name": "BUCKET_NAME", "value": data_bucket.bucket_name},
-                    ],
-                )
-            ],
-            assign_public_ip=True,
-            subnets=ec2.SubnetSelection(subnet_type=ec2.SubnetType.PUBLIC),
-            launch_target=sfn_tasks.EcsFargateLaunchTarget(platform_version=ecs.FargatePlatformVersion.LATEST),
-            propagated_tag_source=ecs.PropagatedTagSource.TASK_DEFINITION,
-            result_path="$.task_result",  # I think this can be removed
-        )
+        # Create the ECS Run Task state (only if ECS construct is provided)
+        run_task = None
+        if ecs_construct:
+            run_task = sfn_tasks.EcsRunTask(
+                self,
+                "OsdpRunFargateManifestFetcherTask",
+                integration_pattern=sfn.IntegrationPattern.RUN_JOB,  # Wait for task completion
+                cluster=ecs_construct.cluster,
+                task_definition=ecs_construct.task_definition,
+                container_overrides=[
+                    sfn_tasks.ContainerOverride(
+                        container_definition=ecs_construct.container,
+                        environment=[
+                            {
+                                "name": "COLLECTION_URL",
+                                "value": sfn.JsonPath.string_at("$.collection_url"),
+                            },
+                            {"name": "BUCKET_NAME", "value": data_bucket.bucket_name},
+                        ],
+                    )
+                ],
+                assign_public_ip=True,
+                subnets=ec2.SubnetSelection(subnet_type=ec2.SubnetType.PUBLIC),
+                launch_target=sfn_tasks.EcsFargateLaunchTarget(platform_version=ecs.FargatePlatformVersion.LATEST),
+                propagated_tag_source=ecs.PropagatedTagSource.TASK_DEFINITION,
+                result_path="$.task_result",  # I think this can be removed
+            )
 
         # Lambda function for fetching manifests from url list
         fetch_iiif_manifest_function = _lambda.Function(
@@ -267,10 +269,14 @@ class StepFunctionsConstruct(Construct):
 
         # Add a Choice state to determine the workflow
         choice_state = sfn.Choice(self, "DataTypeChoice")
-        choice_state.when(
-            sfn.Condition.string_equals("$.workflowType", "iiif"),
-            run_task.next(distributed_map_state).next(start_ingestion),
-        )
+        
+        # Only add IIIF workflow if ECS construct is available
+        if run_task:
+            choice_state.when(
+                sfn.Condition.string_equals("$.workflowType", "iiif"),
+                run_task.next(distributed_map_state).next(start_ingestion),
+            )
+        
         choice_state.when(
             sfn.Condition.string_equals("$.workflowType", "ead"),
             ead_distributed_map_state.next(start_ingestion),
