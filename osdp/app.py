@@ -40,7 +40,9 @@ else:
     # Manually construct the 'data' dictionary from flat CLI context if needed
     data_context = app.node.try_get_context("data")
     ecr_context = app.node.try_get_context("ecr")
-    if (data_context is None or not isinstance(data_context, dict)):
+    print("Data context found:", data_context)
+    print("ECR context found:", ecr_context)
+    if (data_context):
         print("Constructing 'data' context from individual CLI parameters...")
         data_type_cli = app.node.try_get_context("data.type")
         if data_type_cli:
@@ -53,7 +55,7 @@ else:
                     "prefix": app.node.try_get_context("data.s3.prefix"),
                 }
             app.node.set_context("data", constructed_data)
-            if (ecr_context is not None):
+            if (ecr_context):
                 app.node.set_context("ecr", {
                     "registry": app.node.try_get_context("ecr.registry"),
                     "respository": app.node.try_get_context("ecr.repository"),
