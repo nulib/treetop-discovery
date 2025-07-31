@@ -71,7 +71,7 @@ class OsdpPrototypeStack(Stack):
                 ecr_config = {
                     "registry": "public.ecr.aws",
                     "repository": "nulib-staging/osdp-iiif-fetcher",
-                    "tag": "latest"
+                    "tag": "latest",
                 }
 
             ecr_image_uri = f"{ecr_config['registry']}/{ecr_config['repository']}:{ecr_config['tag']}"

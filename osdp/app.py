@@ -58,7 +58,7 @@ else:
                 ecr_registry = app.node.try_get_context("ecr.registry")
                 ecr_repository = app.node.try_get_context("ecr.repository")
                 ecr_tag = app.node.try_get_context("ecr.tag")
-                
+
                 if ecr_registry or ecr_repository or ecr_tag:
                     app.node.set_context(
                         "ecr",
