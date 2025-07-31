@@ -38,9 +38,6 @@ uv sync --all-groups
 # Activate virtual environment
 source .venv/bin/activate
 
-# Install Node.js dependencies for build function
-cd osdp/functions/build_function && npm i && cd ../../../
-
 # Verify CDK can build (while in project root)
 cd osdp && cdk synth && cd ..
 ```
@@ -99,11 +96,71 @@ prefix = "path/to/ead/files/"
 project = "my-project"
 ```
 
-**Key Configuration Notes:**
-- Replace Bedrock model ARNs with ones available in your AWS region
-- **IIIF**: Requires your collection API URL and uses ECS container for manifest fetching
-- **EAD**: Requires S3 bucket/prefix where your EAD XML files are stored
-- ECR configuration only needed for IIIF workflows (uses Northwestern's public repository)
+**Required Configuration Changes:**
+- `stack_prefix`: Choose a unique name for your deployment (e.g., "my-treetop")
+- `embedding_model_arn` & `foundation_model_arn`: Replace with model ARNs available in your AWS region (see [Finding Model ARNs](#finding-model-arns) below)
+- `collection_url` (IIIF only): Your institution's IIIF collection API endpoint
+- `bucket` & `prefix` (EAD only): S3 location where your EAD XML files are stored
+
+
+**Data Source Requirements:**
+- **IIIF**: Your collection must expose a IIIF Collection API endpoint that lists manifest URLs
+- **EAD**: Your EAD XML files must be uploaded to S3 before deployment
+
+#### EAD File Preparation
+
+If you chose EAD as your data source, you need to prepare your files before deployment:
+
+1. **Create S3 Bucket** (if you don't have one):
+   ```bash
+   # Note: S3 bucket names must be lowercase and globally unique
+   aws s3 mb s3://your-ead-bucket-name
+   ```
+
+2. **Upload EAD XML Files**:
+   ```bash
+   # Upload individual files
+   aws s3 cp your-file.xml s3://your-ead-bucket-name/ead-files/
+   
+   # Upload entire directory
+   aws s3 sync ./local-ead-directory/ s3://your-ead-bucket-name/ead-files/
+   ```
+
+3. **Update Configuration**: Ensure your `config.toml` reflects the S3 location:
+   ```toml
+   [data.s3]
+   bucket = "your-ead-bucket-name"  # Must be lowercase
+   prefix = "ead-files/"
+   ```
+
+> [!IMPORTANT]
+> **S3 Bucket Naming**: Bucket names must be lowercase, contain no underscores, and be globally unique across all AWS accounts.
+
+#### Finding Model ARNs
+
+**Enable Model Access:**
+Follow the [AWS documentation to enable model access](https://docs.aws.amazon.com/bedrock/latest/userguide/model-access-modify.html). You'll need to enable access to:
+- **Embedding models**: Amazon Titan Embed Text v1 or v2
+- **Foundation models**: Anthropic Claude or Amazon Titan Text models
+
+**Get Model ARNs:**
+After enabling access, you can find ARNs using:
+
+```bash
+# List available embedding models
+aws bedrock list-foundation-models --by-output-modality EMBEDDING
+
+# List available text generation models  
+aws bedrock list-foundation-models --by-output-modality TEXT
+```
+
+**Common Model ARNs by Region:**
+- **US East 1**: 
+  - Embedding: `arn:aws:bedrock:us-east-1::foundation-model/amazon.titan-embed-text-v1`
+  - Foundation: `arn:aws:bedrock:us-east-1::foundation-model/anthropic.claude-v2`
+- **US West 2**:
+  - Embedding: `arn:aws:bedrock:us-west-2::foundation-model/amazon.titan-embed-text-v1`
+  - Foundation: `arn:aws:bedrock:us-west-2::foundation-model/anthropic.claude-v2`
 
 ### Step 3: Deploy
 
@@ -111,16 +168,23 @@ project = "my-project"
 # Navigate to CDK directory
 cd osdp
 
+# Activate virtual environment
+source ../.venv/bin/activate
+
+# Bootstrap CDK (required for first-time deployment in region)
+cdk bootstrap
+
 # List available stacks to confirm name
 cdk ls
 # Output will show: my-treetop-OSDP-Prototype
 
-# Deploy the stack
-cdk deploy my-treetop-OSDP-Prototype
+# Deploy the stack (bypass approval prompts for automated deployment)
+cdk deploy my-treetop-OSDP-Prototype --require-approval never
 ```
 
-> [!TIP]
-> **AWS SSO Users**: If using AWS SSO, you may need to run `aws sts get-caller-identity` before CDK commands to refresh credentials.
+> [!NOTE]
+> **First-time Setup**: The `cdk bootstrap` command is required only once per AWS account/region combination. It creates necessary S3 buckets and IAM roles for CDK deployments.
+
 
 ### Step 4: Monitor Deployment
 
@@ -128,6 +192,11 @@ CDK will deploy approximately 15-20 AWS resources including databases, compute s
 
 **Required AWS Permissions:**
 This deployment requires Administrator permissions or a custom policy with extensive permissions across S3, RDS, Lambda, Step Functions, Bedrock, Cognito, API Gateway, Amplify, ECS, and IAM.
+
+**AWS Credentials Setup:**
+- Ensure your AWS CLI is configured with valid credentials (`aws configure` or AWS SSO)
+- For AWS SSO users: Refresh credentials if you get "invalid security token" errors
+- The deployment process can take 15-30 minutes, so ensure your session won't expire mid-deployment
 
 #### CloudFormation Stack Outputs
 
@@ -187,7 +256,7 @@ After your initial deployment, you can load additional datasets by manually invo
 1. Go to AWS Console → Step Functions
 2. Select your state machine: `<stack-prefix>-data-pipeline`
 3. Click "Start execution"
-4. Use this JSON input (replace bucket name with your deployment's S3 bucket):
+4. Use this JSON input (replace bucket name with your **Data Processing Bucket** - see [Finding Your S3 Buckets](#finding-your-s3-buckets) below):
 ```json
 {
   "s3": {
@@ -204,7 +273,7 @@ After your initial deployment, you can load additional datasets by manually invo
 2. Go to AWS Console → Step Functions  
 3. Select your state machine: `<stack-prefix>-data-pipeline`
 4. Click "Start execution"
-5. Use this JSON input (replace bucket name with your deployment's S3 bucket):
+5. Use this JSON input (replace bucket name with your **Data Processing Bucket** - see [Finding Your S3 Buckets](#finding-your-s3-buckets) below):
 ```json
 {
   "s3": {
@@ -218,21 +287,75 @@ After your initial deployment, you can load additional datasets by manually invo
 > [!NOTE]
 > To load EAD data after initially deploying with IIIF, you must grant S3 `GetObject` and `ListObjects` permissions to both the state machine and EAD processing Lambda function.
 
+#### Finding Your S3 Buckets
+
+Your deployment creates **two S3 buckets**:
+
+1. **Config/Source Bucket**: Stores your original EAD XML files (named from your `config.toml` - e.g., `my-treetop-ead-bucket`)
+2. **Data Processing Bucket**: Stores processed data and results (auto-generated name with random suffix - e.g., `my-treetop-12345678abcd`)
+
+**For Step Function workflows, you need the Data Processing Bucket name:**
+
+**Method 1 - CloudFormation Outputs:**
+1. AWS Console → CloudFormation → Your stack → Outputs tab
+2. Look for output with key containing "bucket" or "s3"
+
+**Method 2 - S3 Console:**
+1. AWS Console → S3 → Buckets
+2. Look for bucket name starting with `<stack-prefix>-` and ending with random characters
+3. Example: `my-treetop-12345678abcd` (**this is your Data Processing Bucket**)
+4. Your Config/Source Bucket will match your `config.toml` bucket name exactly
+
+**Method 3 - AWS CLI:**
+```bash
+# List buckets containing your stack prefix
+aws s3 ls | grep my-treetop
+
+# You'll see both buckets:
+# my-treetop-ead-bucket          <- Config/Source Bucket  
+# my-treetop-12345678abcd        <- Data Processing Bucket (use this for Step Functions)
+```
+
 ### Monitoring Data Loading Progress
 
 **Initial data loading takes hours and the UI shows CORS errors until complete.**
 
-Monitor progress in AWS Console:
+#### Step-by-Step Monitoring
 
-1. **Step Functions**: AWS Console → Step Functions → `<prefix>-data-pipeline` → View execution progress
-2. **Bedrock Knowledge Base**: AWS Console → Bedrock → Knowledge bases → Your KB → Data source → Sync jobs
-3. **CloudWatch Logs**: Monitor Lambda function logs for processing details
-4. **S3 Bucket**: Check `<stack-name>-<suffix>` bucket for processed data files
+**1. Check Step Function Execution:**
+- AWS Console → Step Functions → `<stack-prefix>-data-pipeline`
+- Look for "RUNNING" or "SUCCEEDED" status
+- If failed, click execution to see error details
+- Expected runtime: 1-4 hours depending on collection size
 
-**The UI becomes accessible only after:**
-- Step Function execution completes successfully
-- Bedrock Knowledge Base sync reaches "Ready" status
-- All Lambda functions finish processing
+**2. Monitor Bedrock Knowledge Base Sync:**
+- AWS Console → Amazon Bedrock → Knowledge bases
+- Select your knowledge base (named `<stack-prefix>-knowledge-base`)
+- Click "Data source" tab → View sync jobs
+- Wait for sync status to change from "Syncing" to "Ready"
+
+**3. Verify Data Processing:**
+- AWS Console → S3 → Your **Data Processing Bucket** (the one with random suffix - see [Finding Your S3 Buckets](#finding-your-s3-buckets))
+- Check for processed files in `data/ead/` folder (EAD workflows) or `data/iiif/` folder (IIIF workflows)
+- Files should appear as Step Function progresses
+- Note: Your original EAD files remain in the Config/Source Bucket unchanged
+
+**4. Check for Errors:**
+- AWS Console → CloudWatch → Log groups
+- Look for logs from Lambda functions:
+  - `/aws/lambda/<stack-prefix>-get-iiif-manifest` (IIIF only)
+  - `/aws/lambda/<stack-prefix>-process-ead` (EAD only)
+
+#### Expected Timeline
+- **Step Function**: 1-4 hours (varies by collection size)
+- **Bedrock Sync**: Additional 30-60 minutes after Step Function completes
+- **UI Access**: Available once Bedrock sync shows "Ready" status
+
+#### Troubleshooting Data Loading
+- **Step Function fails**: Check CloudWatch logs for specific Lambda errors
+- **Bedrock sync stuck**: Verify S3 permissions and file formats
+- **UI still shows CORS errors**: Bedrock sync may still be in progress
+- **No data in S3**: Check your source data configuration (collection URL or S3 path)
 
 ---
 
@@ -342,7 +465,11 @@ uv sync --all-groups
 1. **CDK synthesis fails**: Restart your shell and re-activate the virtual environment
 2. **Bedrock model access denied**: Enable model access in the Bedrock console for your region
 3. **UI shows CORS errors**: Wait for data loading to complete (can take hours)
-4. **Authentication errors with AWS SSO**: Run `aws sts get-caller-identity` to refresh credentials
+4. **Authentication errors with AWS SSO**: Re-authenticate using your AWS SSO provider
+5. **"Invalid bucket name" errors**: Ensure S3 bucket names are lowercase and contain no underscores
+6. **"CDK bootstrap required" errors**: Run `cdk bootstrap` before deployment
+7. **"Security token invalid" errors**: AWS credentials expired - refresh using SSO or `aws configure`
+8. **Deployment stuck on approval**: Use `--require-approval never` flag for automated deployment
 
 ---
 
@@ -383,18 +510,34 @@ The project includes a CI/CD pipeline for staging deployments:
 - **Staging Stack**: `OsdpPipelineStack/staging/OSDP-Prototype`
 - **GitHub Integration**: Pipeline sources from GitHub with Secrets Manager authentication
 
-### IIIF Docker Image Development
+### ECR Repository
 
-Northwestern maintains the IIIF manifest fetcher Docker image. See [iiif/README.md](iiif/README.md) for details.
+Northwestern maintains the IIIF manifest fetcher Docker image in a public ECR repository:
+- **Registry**: `public.ecr.aws/nulib-staging`
+- **Repository**: `osdp-iiif-fetcher`
+- **Usage**: Uses Northwestern's public container registry for IIIF processing
 
-**Building and Pushing:**
+**Building and Pushing ECR Images:**
 
 ```bash
-# From project root
+# set your AWS PROFILE to the staging admin profile (it has permissions to push to the ECR repository)
+export AWS_PROFILE=[your-staging-profile]
+
+# Authenticate with ECR
 aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin public.ecr.aws/nulib-staging
+
+# Build image
 docker build -t public.ecr.aws/nulib-staging/osdp-iiif-fetcher:[tag] -f iiif/Dockerfile .
+
+# Push image
 docker push public.ecr.aws/nulib-staging/osdp-iiif-fetcher:[tag]
+
+# Clear the profile variable after pushing
+unset AWS_PROFILE
 ```
+
+**Image Development:**
+See [iiif/README.md](iiif/README.md) for detailed development instructions.
 
 ### NU Development Setup
 
@@ -407,6 +550,8 @@ Follow the [Quick Start](#quick-start-for-simple-deployment) steps above.
 **Node.js Setup:**
 ```bash
 node --version  # Should be v22.x
+
+# Install Node.js dependencies for build function
 cd osdp/functions/build_function && npm i && cd ../../../
 ```
 
