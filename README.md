@@ -101,7 +101,7 @@ project = "my-project"
 
 **Required Configuration Changes:**
 - `stack_prefix`: Choose a unique name for your deployment (e.g., "my-treetop")
-- **Account ID**: Replace `123456789012` in the foundation model ARN with your AWS account ID
+- **Account ID**: Replace `123456789012` in the `foundation_model_arn` (inference profile) with your AWS account ID
 - `collection_url` (IIIF only): Your institution's IIIF collection API endpoint
 - `bucket` & `prefix` (EAD only): S3 location where your EAD XML files are stored
 
@@ -149,7 +149,7 @@ If you chose EAD as your data source, you need to prepare your files before depl
 **Enable Model Access:**
 Follow the [AWS documentation to enable model access](https://docs.aws.amazon.com/bedrock/latest/userguide/model-access-modify.html). You'll need to enable access to:
 - **Embedding models**: Amazon Titan Embed Text, Cohere Embed, or other embedding models
-- **Foundation models**: Anthropic Claude, Amazon Titan Text, or other text generation models
+- **Foundation models**: Anthropic Claude, Amazon Titan Text, or other foundation models
 
 **Get Model ARNs:**
 After enabling access, you can find ARNs using:
@@ -165,35 +165,28 @@ aws bedrock list-foundation-models --by-output-modality TEXT
 aws bedrock list-inference-profiles
 ```
 
-**ARN Format Options:**
+**ARN Format Requirements:**
 
-You can use either **direct model ARNs** or **inference profile ARNs** (recommended):
-
-**Direct Model ARNs** (single region):
+**For `embedding_model_arn`** - Use direct foundation model ARNs:
 - Format: `arn:aws:bedrock:REGION::foundation-model/MODEL_ID`
-- Example: `arn:aws:bedrock:us-east-1::foundation-model/amazon.titan-embed-text-v1`
+- Example: `arn:aws:bedrock:us-east-1::foundation-model/cohere.embed-multilingual-v3`
 
-**Inference Profile ARNs** (cross-region, recommended):
+**For `foundation_model_arn`** - Use inference profile ARNs:
 - Format: `arn:aws:bedrock:REGION:ACCOUNT_ID:inference-profile/PROFILE_ID`
 - Example: `arn:aws:bedrock:us-east-1:123456789012:inference-profile/us.anthropic.claude-3-5-sonnet-20241022-v2:0`
-- **Benefits**: Higher throughput, automatic optimal region selection, better availability
+- **Benefits**: Inference profiles automatically route requests across regions for higher throughput and better availability
 
 **Common Model ARNs by Region:**
 
-*Direct Model ARNs:*
-- **US East 1**: 
-  - Embedding: `arn:aws:bedrock:us-east-1::foundation-model/amazon.titan-embed-text-v1`
-  - Foundation: `arn:aws:bedrock:us-east-1::foundation-model/anthropic.claude-v2`
-- **US West 2**:
-  - Embedding: `arn:aws:bedrock:us-west-2::foundation-model/amazon.titan-embed-text-v1`  
-  - Foundation: `arn:aws:bedrock:us-west-2::foundation-model/anthropic.claude-v2`
+**For `embedding_model_arn`** (direct foundation model ARNs):
+- **US East 1**: `arn:aws:bedrock:us-east-1::foundation-model/cohere.embed-multilingual-v3`
+- **US East 1** (Alternative): `arn:aws:bedrock:us-east-1::foundation-model/amazon.titan-embed-text-v2:0`
+- **US West 2**: `arn:aws:bedrock:us-west-2::foundation-model/cohere.embed-multilingual-v3`
+- **US West 2** (Alternative): `arn:aws:bedrock:us-west-2::foundation-model/amazon.titan-embed-text-v1`
 
-*Cross-Region Inference Profile ARNs (replace 123456789012 with your AWS account ID):*
-- **US Regions**: 
-  - Foundation: `arn:aws:bedrock:us-east-1:123456789012:inference-profile/us.anthropic.claude-3-5-sonnet-20241022-v2:0`
-  - Embedding: `arn:aws:bedrock:us-east-1::foundation-model/cohere.embed-multilingual-v3`
-  - Alternative Foundation: `arn:aws:bedrock:us-east-1:123456789012:inference-profile/us.anthropic.claude-3-7-sonnet-20250219-v1:0`
-  - Alternative Embedding: `arn:aws:bedrock:us-east-1::foundation-model/amazon.titan-embed-text-v2:0`
+**For `foundation_model_arn`** (inference profile ARNs - replace 123456789012 with your AWS account ID):
+- **US Regions**: `arn:aws:bedrock:us-east-1:123456789012:inference-profile/us.anthropic.claude-3-5-sonnet-20241022-v2:0`
+- **US Regions** (Alternative): `arn:aws:bedrock:us-east-1:123456789012:inference-profile/us.anthropic.claude-3-7-sonnet-20250219-v1:0`
 
 > [!TIP]
 > **Use Inference Profiles for Production**: Inference profiles provide [cross-region inference](https://docs.aws.amazon.com/bedrock/latest/userguide/cross-region-inference.html) for better performance and availability. They automatically route requests to optimal regions within your geography.
@@ -248,6 +241,36 @@ After deployment completes check the bottom for relevant stack outputs (if you m
 
 > [!TIP]
 > Save the `UserPoolId` and `UserPoolIdWebsite URL` from outputs. You'll need the `UserPoolId` to create Cognito users in the next step. `Website URL` is your application URL which can be retrieved manually by following step 6 below.
+
+#### Monitoring Data Loading Progress
+
+**Initial data loading takes hours and the UI shows CORS errors until complete.**
+
+##### Step-by-Step Monitoring
+
+**1. Check Step Function Execution:**
+- AWS Console → Step Functions → `<stack-prefix>-data-pipeline`
+- Look for "RUNNING" or "SUCCEEDED" status
+- If failed, click execution to see error details
+- Expected runtime: 1-4 hours depending on collection size
+
+**2. Monitor Bedrock Knowledge Base Sync:**
+- AWS Console → Amazon Bedrock → Knowledge bases
+- Select your knowledge base (named `<stack-prefix>-knowledge-base`)
+- Click "Data source" tab → View sync jobs
+- Wait for sync status to change from "Syncing" to "Ready"
+
+**3. Verify Data Processing:**
+- AWS Console → S3 → Your **Data Processing Bucket** (the one with random suffix - see [Finding Your S3 Buckets](#finding-your-s3-buckets))
+- Check for processed files in `data/ead/` folder (EAD workflows) or `data/iiif/` folder (IIIF workflows)
+- Files should appear as Step Function progresses
+- Note: Your original EAD files remain in the Config/Source Bucket unchanged
+
+**4. Check for Errors:**
+- AWS Console → CloudWatch → Log groups
+- Look for logs from Lambda functions:
+  - `/aws/lambda/<stack-prefix>-get-iiif-manifest` (IIIF only)
+  - `/aws/lambda/<stack-prefix>-process-ead` (EAD only)
 
 ### Step 5: Create User Account
 
@@ -354,36 +377,6 @@ aws s3 ls | grep my-treetop
 # my-treetop-ead-bucket          <- Config/Source Bucket  
 # my-treetop-12345678abcd        <- Data Processing Bucket (use this for Step Functions)
 ```
-
-### Monitoring Data Loading Progress
-
-**Initial data loading takes hours and the UI shows CORS errors until complete.**
-
-#### Step-by-Step Monitoring
-
-**1. Check Step Function Execution:**
-- AWS Console → Step Functions → `<stack-prefix>-data-pipeline`
-- Look for "RUNNING" or "SUCCEEDED" status
-- If failed, click execution to see error details
-- Expected runtime: 1-4 hours depending on collection size
-
-**2. Monitor Bedrock Knowledge Base Sync:**
-- AWS Console → Amazon Bedrock → Knowledge bases
-- Select your knowledge base (named `<stack-prefix>-knowledge-base`)
-- Click "Data source" tab → View sync jobs
-- Wait for sync status to change from "Syncing" to "Ready"
-
-**3. Verify Data Processing:**
-- AWS Console → S3 → Your **Data Processing Bucket** (the one with random suffix - see [Finding Your S3 Buckets](#finding-your-s3-buckets))
-- Check for processed files in `data/ead/` folder (EAD workflows) or `data/iiif/` folder (IIIF workflows)
-- Files should appear as Step Function progresses
-- Note: Your original EAD files remain in the Config/Source Bucket unchanged
-
-**4. Check for Errors:**
-- AWS Console → CloudWatch → Log groups
-- Look for logs from Lambda functions:
-  - `/aws/lambda/<stack-prefix>-get-iiif-manifest` (IIIF only)
-  - `/aws/lambda/<stack-prefix>-process-ead` (EAD only)
 
 #### Expected Timeline
 - **Step Function**: 1-4 hours (varies by collection size)
