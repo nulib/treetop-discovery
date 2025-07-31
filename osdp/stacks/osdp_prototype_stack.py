@@ -64,10 +64,15 @@ class OsdpPrototypeStack(Stack):
 
         ecs_construct = None
         if workflow_type == "iiif":
-            # Only require ECR config for IIIF workflows that need ECS
+            # Get ECR config with defaults for IIIF workflows
             ecr_config = self.node.try_get_context("ecr")
             if not ecr_config:
-                raise ValueError("ECR configuration is required for IIIF workflows")
+                # Use default ECR configuration
+                ecr_config = {
+                    "registry": "public.ecr.aws",
+                    "repository": "nulib-staging/osdp-iiif-fetcher",
+                    "tag": "latest"
+                }
 
             ecr_image_uri = f"{ecr_config['registry']}/{ecr_config['repository']}:{ecr_config['tag']}"
             ecs_construct = EcsConstruct(self, "EcsConstruct", data_bucket=data_bucket, ecr_image=ecr_image_uri)

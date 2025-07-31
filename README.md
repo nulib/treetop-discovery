@@ -4,9 +4,6 @@ Treetop Discovery is an AWS CDK-based data discovery platform that builds search
 
 ## Quick Start for Simple Deployment
 
-> [!WARNING]
-> **Initial data loading can take several hours for large collections** and the UI will show CORS errors until data sync completes. See [Monitoring Data Loading Progress](#monitoring-data-loading-progress) below.
-
 ### AWS Requirements
 
 - **AWS Account**: Administrator permissions recommended
@@ -60,13 +57,10 @@ cp osdp/config.toml.example osdp/config.toml
 
 ```toml
 stack_prefix = "my-treetop"  # Choose your stack name prefix
-embedding_model_arn = "arn:aws:bedrock:us-east-1::foundation-model/amazon.titan-embed-text-v1"
-foundation_model_arn = "arn:aws:bedrock:us-east-1::foundation-model/anthropic.claude-v2"
 
-[ecr]
-registry = "public.ecr.aws"
-repository = "nulib-staging/osdp-iiif-fetcher"
-tag = "latest"
+# Recommended: Cross-region inference profiles (replace 123456789012 with your account ID)
+embedding_model_arn = "arn:aws:bedrock:us-east-1::foundation-model/cohere.embed-multilingual-v3"
+foundation_model_arn = "arn:aws:bedrock:us-east-1:123456789012:inference-profile/us.anthropic.claude-3-5-sonnet-20241022-v2:0"
 
 [data]
 type = "iiif"
@@ -74,16 +68,23 @@ collection_url = "https://your-iiif-collection-api-url"
 
 [tags]
 project = "my-project"
+
+# ECR configuration (optional - defaults shown below)
+# Uncomment and modify only if you need to override defaults
+# [ecr]
+# registry = "public.ecr.aws"                    # Default
+# repository = "nulib-staging/osdp-iiif-fetcher" # Default
+# tag = "latest"                                 # Default
 ```
 
 **For EAD Data Sources** (archival XML files in S3):
 
 ```toml
 stack_prefix = "my-treetop"  # Choose your stack name prefix
-embedding_model_arn = "arn:aws:bedrock:us-east-1::foundation-model/amazon.titan-embed-text-v1"
-foundation_model_arn = "arn:aws:bedrock:us-east-1::foundation-model/anthropic.claude-v2"
 
-# Note: ECR section not needed for EAD workflows
+# Recommended: Cross-region inference profiles (replace 123456789012 with your account ID)
+embedding_model_arn = "arn:aws:bedrock:us-east-1::foundation-model/cohere.embed-multilingual-v3"
+foundation_model_arn = "arn:aws:bedrock:us-east-1:123456789012:inference-profile/us.anthropic.claude-3-5-sonnet-20241022-v2:0"
 
 [data]
 type = "ead"
@@ -94,13 +95,20 @@ prefix = "path/to/ead/files/"
 
 [tags]
 project = "my-project"
+
+# Note: ECR section not required for EAD workflows
 ```
 
 **Required Configuration Changes:**
 - `stack_prefix`: Choose a unique name for your deployment (e.g., "my-treetop")
-- `embedding_model_arn` & `foundation_model_arn`: Replace with model ARNs available in your AWS region (see [Finding Model ARNs](#finding-model-arns) below)
+- **Account ID**: Replace `123456789012` in the foundation model ARN with your AWS account ID
 - `collection_url` (IIIF only): Your institution's IIIF collection API endpoint
 - `bucket` & `prefix` (EAD only): S3 location where your EAD XML files are stored
+
+**Get Your AWS Account ID:**
+```bash
+aws sts get-caller-identity --query Account --output text
+```
 
 
 **Data Source Requirements:**
@@ -140,8 +148,8 @@ If you chose EAD as your data source, you need to prepare your files before depl
 
 **Enable Model Access:**
 Follow the [AWS documentation to enable model access](https://docs.aws.amazon.com/bedrock/latest/userguide/model-access-modify.html). You'll need to enable access to:
-- **Embedding models**: Amazon Titan Embed Text v1 or v2
-- **Foundation models**: Anthropic Claude or Amazon Titan Text models
+- **Embedding models**: Amazon Titan Embed Text, Cohere Embed, or other embedding models
+- **Foundation models**: Anthropic Claude, Amazon Titan Text, or other text generation models
 
 **Get Model ARNs:**
 After enabling access, you can find ARNs using:
@@ -152,15 +160,43 @@ aws bedrock list-foundation-models --by-output-modality EMBEDDING
 
 # List available text generation models  
 aws bedrock list-foundation-models --by-output-modality TEXT
+
+# List available inference profiles (recommended for better performance)
+aws bedrock list-inference-profiles
 ```
 
+**ARN Format Options:**
+
+You can use either **direct model ARNs** or **inference profile ARNs** (recommended):
+
+**Direct Model ARNs** (single region):
+- Format: `arn:aws:bedrock:REGION::foundation-model/MODEL_ID`
+- Example: `arn:aws:bedrock:us-east-1::foundation-model/amazon.titan-embed-text-v1`
+
+**Inference Profile ARNs** (cross-region, recommended):
+- Format: `arn:aws:bedrock:REGION:ACCOUNT_ID:inference-profile/PROFILE_ID`
+- Example: `arn:aws:bedrock:us-east-1:123456789012:inference-profile/us.anthropic.claude-3-5-sonnet-20241022-v2:0`
+- **Benefits**: Higher throughput, automatic optimal region selection, better availability
+
 **Common Model ARNs by Region:**
+
+*Direct Model ARNs:*
 - **US East 1**: 
   - Embedding: `arn:aws:bedrock:us-east-1::foundation-model/amazon.titan-embed-text-v1`
   - Foundation: `arn:aws:bedrock:us-east-1::foundation-model/anthropic.claude-v2`
 - **US West 2**:
-  - Embedding: `arn:aws:bedrock:us-west-2::foundation-model/amazon.titan-embed-text-v1`
+  - Embedding: `arn:aws:bedrock:us-west-2::foundation-model/amazon.titan-embed-text-v1`  
   - Foundation: `arn:aws:bedrock:us-west-2::foundation-model/anthropic.claude-v2`
+
+*Cross-Region Inference Profile ARNs (replace 123456789012 with your AWS account ID):*
+- **US Regions**: 
+  - Foundation: `arn:aws:bedrock:us-east-1:123456789012:inference-profile/us.anthropic.claude-3-5-sonnet-20241022-v2:0`
+  - Embedding: `arn:aws:bedrock:us-east-1::foundation-model/cohere.embed-multilingual-v3`
+  - Alternative Foundation: `arn:aws:bedrock:us-east-1:123456789012:inference-profile/us.anthropic.claude-3-7-sonnet-20250219-v1:0`
+  - Alternative Embedding: `arn:aws:bedrock:us-east-1::foundation-model/amazon.titan-embed-text-v2:0`
+
+> [!TIP]
+> **Use Inference Profiles for Production**: Inference profiles provide [cross-region inference](https://docs.aws.amazon.com/bedrock/latest/userguide/cross-region-inference.html) for better performance and availability. They automatically route requests to optimal regions within your geography.
 
 ### Step 3: Deploy
 
@@ -190,12 +226,15 @@ cdk deploy my-treetop-OSDP-Prototype --require-approval never
 
 CDK will deploy approximately 15-20 AWS resources including databases, compute services, storage, and AI/ML components. The deployment typically takes 10-15 minutes.
 
+> [!WARNING]
+> **Post-Deployment Data Loading**: After CDK deployment completes, the application will show CORS errors and be unusable until the initial data ingestion finishes. This process can take **several hours** depending on your collection size. Monitor progress using the steps below.
+
 **Required AWS Permissions:**
 This deployment requires Administrator permissions or a custom policy with extensive permissions across S3, RDS, Lambda, Step Functions, Bedrock, Cognito, API Gateway, Amplify, ECS, and IAM.
 
 **AWS Credentials Setup:**
 - Ensure your AWS CLI is configured with valid credentials (`aws configure` or AWS SSO)
-- For AWS SSO users: Refresh credentials if you get "invalid security token" errors
+- For AWS SSO users: Refresh credentials if you get "invalid security token" errors (if you need help, see [Northwestern University Development](#nu-development-environment))
 - The deployment process can take 15-30 minutes, so ensure your session won't expire mid-deployment
 
 #### CloudFormation Stack Outputs
