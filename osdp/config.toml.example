@@ -4,13 +4,6 @@ foundation_model_arn = ""
 manifest_fetch_concurrency = 15
 ead_process_concurrency = 10
 
-[ecr]
-# The full repository path is composed of {registry}/{repository}:{tag}
-# e.g. public.ecr.aws/nulib-staging/osdp-iiif-fetcher:latest
-registry = "public.ecr.aws"
-repository = "nulib-staging/osdp-iiif-fetcher"
-tag = "latest"
-
 [data]
 type = "iiif"
 collection_url = "https://api.dc.library.northwestern.edu/api/v2/collections/ecacd539-fe38-40ec-bbc0-590acee3d4f2?as=iiif"
@@ -25,3 +18,10 @@ collection_url = "https://api.dc.library.northwestern.edu/api/v2/collections/eca
 
 [tags]
 project = "my-project"
+
+# ECR configuration (optional - uses defaults shown below)
+# Uncomment and modify the following section only if you need to override the default ECR settings
+# [ecr]
+# registry = "public.ecr.aws"                    # Default: "public.ecr.aws"
+# repository = "nulib-staging/osdp-iiif-fetcher" # Default: "nulib-staging/osdp-iiif-fetcher"
+# tag = "latest"                                 # Default: "latest"

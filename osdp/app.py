@@ -54,16 +54,20 @@ else:
                 }
             app.node.set_context("data", constructed_data)
             if ecr_context is None:
-                app.node.set_context(
-                    "ecr",
-                    {
-                        "registry": app.node.try_get_context("ecr.registry"),
-                        "repository": app.node.try_get_context("ecr.repository"),
-                        "tag": app.node.try_get_context("ecr.tag"),
-                    },
-                )
-            else:
-                print("Warning: 'ecr' configuration required for IIIF data type.")
+                # Construct ECR context from CLI parameters if provided, otherwise defaults will be used
+                ecr_registry = app.node.try_get_context("ecr.registry")
+                ecr_repository = app.node.try_get_context("ecr.repository")
+                ecr_tag = app.node.try_get_context("ecr.tag")
+
+                if ecr_registry or ecr_repository or ecr_tag:
+                    app.node.set_context(
+                        "ecr",
+                        {
+                            "registry": ecr_registry or "public.ecr.aws",
+                            "repository": ecr_repository or "nulib-staging/osdp-iiif-fetcher",
+                            "tag": ecr_tag or "latest",
+                        },
+                    )
         else:
             print("Warning: 'data.type' not found in CLI context.")
 
