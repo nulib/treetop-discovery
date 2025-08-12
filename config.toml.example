@@ -25,3 +25,11 @@ project = "my-project"
 # registry = "public.ecr.aws"                    # Default: "public.ecr.aws"
 # repository = "nulib-staging/osdp-iiif-fetcher" # Default: "nulib-staging/osdp-iiif-fetcher"
 # tag = "latest"                                 # Default: "latest"
+
+# Database configuration (optional)
+# Uncomment and modify the following section only if you need to override the default database settings
+# [database]
+# name = "treetop"                              # Default: "treetop" - Database name
+# [database.credentials]
+# username = "postgres"                         # Default: "postgres" - Database username
+# password_exclude_chars = '"\'@/\\'            # Default: '"\'@/\' - Characters to exclude from generated password

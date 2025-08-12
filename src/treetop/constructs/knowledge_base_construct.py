@@ -16,9 +16,16 @@ class KnowledgeBaseConstruct(Construct):
         db_credentials: str,
         embedding_model_arn: str,
         db_initialization: str,
+        db_config: dict = None,
         **kwargs,
     ) -> None:
         super().__init__(scope, id, **kwargs)
+
+        # Set default database configuration
+        default_db_config = {"name": "treetop"}
+        self.db_config = default_db_config.copy()
+        if db_config:
+            self.db_config.update(db_config)
 
         # Get stack_prefix from context
         stack_prefix = self.node.try_get_context("stack_prefix") or ""
@@ -87,7 +94,7 @@ class KnowledgeBaseConstruct(Construct):
                 type="RDS",
                 rds_configuration=bedrock.CfnKnowledgeBase.RdsConfigurationProperty(
                     credentials_secret_arn=db_credentials.secret_arn,
-                    database_name="postgres",
+                    database_name=self.db_config["name"],
                     resource_arn=db_cluster.cluster_arn,
                     table_name="bedrock_integration.bedrock_knowledge_base",
                     field_mapping=bedrock.CfnKnowledgeBase.RdsFieldMappingProperty(
