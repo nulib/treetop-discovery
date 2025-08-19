@@ -2,7 +2,8 @@ import aws_cdk as core
 import aws_cdk.assertions as assertions
 import aws_cdk.aws_iam as iam
 import pytest
-from stacks.osdp_prototype_stack import OsdpPrototypeStack
+
+from treetop.stacks.treetop_stack import TreetopStack
 
 
 @pytest.fixture
@@ -15,7 +16,7 @@ def stack_and_template():
         "ecr",
         {
             "registry": "public.ecr.aws",
-            "repository": "nulib-staging/osdp-iiif-fetcher",
+            "repository": "nulib-staging/treetop-iiif-fetcher",
             "tag": "latest",
         },
     )
@@ -26,7 +27,7 @@ def stack_and_template():
         "foundation_model_arn", "arn:aws:sagemaker:us-east-1:123456789012:model/bedrock-embedding-model"
     )
     app.node.set_context("aws:cdk:bundling-stacks", [])  # Disable bundling to speed up tests
-    stack = OsdpPrototypeStack(app, "alice-OSDP-Prototype", env={"account": "123456789012", "region": "us-east-1"})
+    stack = TreetopStack(app, "alice-Treetop", env={"account": "123456789012", "region": "us-east-1"})
     template = assertions.Template.from_stack(stack)
     return stack, template
 
@@ -128,7 +129,7 @@ def test_function_invoker_role_created():
         "ecr",
         {
             "registry": "public.ecr.aws",
-            "repository": "nulib-staging/osdp-iiif-fetcher",
+            "repository": "nulib-staging/treetop-iiif-fetcher",
             "tag": "latest",
         },
     )
@@ -138,9 +139,9 @@ def test_function_invoker_role_created():
         github_action_arn,
         conditions={"StringLike": {"token.actions.githubusercontent.com:sub": "repo:nulib/osdp-prototype-ui:*"}},
     )
-    stack = OsdpPrototypeStack(
+    stack = TreetopStack(
         app,
-        "alice-OSDP-Prototype",
+        "alice-Treetop",
         ui_function_invoke_principal=principal,
         env={"account": "123456789012", "region": "us-east-1"},
     )
@@ -199,7 +200,7 @@ def test_cluster_created(stack_and_template):
 def test_task_definition_created(stack_and_template):
     stack, template = stack_and_template
     template.has_resource_properties(
-        "AWS::ECS::TaskDefinition", {"ContainerDefinitions": [{"Name": "OsdpIiifFetcherContainer"}]}
+        "AWS::ECS::TaskDefinition", {"ContainerDefinitions": [{"Name": "TreetopIiifFetcherContainer"}]}
     )
 
 

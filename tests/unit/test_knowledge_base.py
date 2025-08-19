@@ -1,7 +1,8 @@
 import aws_cdk as core
 import aws_cdk.assertions as assertions
 import pytest
-from stacks.osdp_prototype_stack import OsdpPrototypeStack
+
+from treetop.stacks.treetop_stack import TreetopStack
 
 
 @pytest.fixture
@@ -18,7 +19,7 @@ def stack_and_template():
     )
 
     app.node.set_context("aws:cdk:bundling-stacks", [])  # Disable bundling to speed up tests
-    stack = OsdpPrototypeStack(app, "alice-OSDP-Prototype", env={"account": "123456789012", "region": "us-east-1"})
+    stack = TreetopStack(app, "alice-Treetop", env={"account": "123456789012", "region": "us-east-1"})
     template = assertions.Template.from_stack(stack)
     return stack, template
 
@@ -49,5 +50,5 @@ def test_knowledge_base_resource_created(stack_and_template):
 def test_data_source_created(stack_and_template):
     stack, template = stack_and_template
     template.has_resource_properties(
-        "AWS::Bedrock::DataSource", {"Name": "OsdpS3DataSource", "Description": "OSDP S3 Data Source"}
+        "AWS::Bedrock::DataSource", {"Name": "TreetopS3DataSource", "Description": "Treetop S3 Data Source"}
     )

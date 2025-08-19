@@ -22,12 +22,12 @@ class EcsConstruct(Construct):
         self.vpc = ec2.Vpc.from_lookup(self, "DefaultVpc", is_default=True)
 
         # Create ECS Cluster
-        self.cluster = ecs.Cluster(self, "OsdpCluster", vpc=self.vpc)
+        self.cluster = ecs.Cluster(self, "TreetopCluster", vpc=self.vpc)
 
         # Task Role
         self.task_role = iam.Role(
             self,
-            "OsdpTaskRole",
+            "TreetopTaskRole",
             assumed_by=iam.ServicePrincipal("ecs-tasks.amazonaws.com"),
         )
 
@@ -36,7 +36,7 @@ class EcsConstruct(Construct):
         # Execution Role for ECS Task
         self.execution_role = iam.Role(
             self,
-            "OsdpExecutionRole",
+            "TreetopExecutionRole",
             assumed_by=iam.ServicePrincipal("ecs-tasks.amazonaws.com"),
         )
 
@@ -50,7 +50,7 @@ class EcsConstruct(Construct):
         # Create Task Definition
         self.task_definition = ecs.FargateTaskDefinition(
             self,
-            "OsdpIiifFetcherTaskDef",
+            "TreetopIiifFetcherTaskDef",
             memory_limit_mib=512,
             cpu=256,
             task_role=self.task_role,
@@ -59,10 +59,10 @@ class EcsConstruct(Construct):
 
         # Add container to task definition
         self.container = self.task_definition.add_container(
-            "OsdpIiifFetcherContainer",
+            "TreetopIiifFetcherContainer",
             image=ecs.ContainerImage.from_registry(ecr_image),
             logging=ecs.LogDriver.aws_logs(
-                stream_prefix="osdp-iiif-fetcher",
+                stream_prefix="Treetop-iiif-fetcher",
                 log_retention=logs.RetentionDays.ONE_WEEK,
             ),
         )

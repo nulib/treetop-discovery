@@ -3,7 +3,8 @@ import aws_cdk as cdk
 from aws_cdk import SecretValue, pipelines
 from aws_cdk import aws_ssm as ssm
 from constructs import Construct
-from pipeline.osdp_application_stage import OsdpApplicationStage
+
+from treetop.pipeline.treetop_application_stage import TreetopApplicationStage
 
 
 class PipelineStack(cdk.Stack):
@@ -14,11 +15,11 @@ class PipelineStack(cdk.Stack):
         source = pipelines.CodePipelineSource.git_hub(
             "nulib/treetop-discovery",
             "main",
-            authentication=SecretValue.secrets_manager("osdp/github-token"),
+            authentication=SecretValue.secrets_manager("treetop/github-token"),
         )
 
         # Get stack_prefix and other configs from parameter store
-        config_param = ssm.StringParameter.from_string_parameter_name(self, "ConfigParam", "/osdp/staging/config")
+        config_param = ssm.StringParameter.from_string_parameter_name(self, "ConfigParam", "/treetop/staging/config")
 
         synth = pipelines.ShellStep(
             "Synth",
@@ -29,17 +30,16 @@ class PipelineStack(cdk.Stack):
                 "sudo dnf install -y libxcrypt-compat || true",
                 "uv sync --no-dev",
                 ". .venv/bin/activate",
-                "cd osdp",
                 "cdk --version",
                 f"cdk synth {config_param.string_value}",
             ],
-            primary_output_directory="osdp/cdk.out",
+            primary_output_directory="treetop/cdk.out",
         )
 
         # Define the CodePipeline using CDK Pipelines
         pipeline = pipelines.CodePipeline(
             self,
-            "OsdpPipeline",
+            "TreetopPipeline",
             synth=synth,
         )
 
@@ -70,7 +70,6 @@ class PipelineStack(cdk.Stack):
                     "pip install uv",
                     "uv sync",
                     ". .venv/bin/activate",
-                    "cd osdp",
                     "pytest -vv tests/",
                 ],
             )
@@ -78,7 +77,7 @@ class PipelineStack(cdk.Stack):
 
         # Define the application stages
         # The stack_prefix will be passed through the context by the synth step
-        deploy_stage = OsdpApplicationStage(
-            self, "staging", env=cdk.Environment(account="625046682746", region="us-east-1")
+        deploy_stage = TreetopApplicationStage(
+            self, "staging", env=cdk.Environment(account=self.account, region=self.region)
         )
         pipeline.add_stage(deploy_stage)

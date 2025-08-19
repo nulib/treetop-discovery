@@ -43,7 +43,7 @@ class StepFunctionsConstruct(Construct):
         if ecs_construct:
             run_task = sfn_tasks.EcsRunTask(
                 self,
-                "OsdpRunFargateManifestFetcherTask",
+                "TreetopRunFargateManifestFetcherTask",
                 integration_pattern=sfn.IntegrationPattern.RUN_JOB,  # Wait for task completion
                 cluster=ecs_construct.cluster,
                 task_definition=ecs_construct.task_definition,
@@ -73,7 +73,7 @@ class StepFunctionsConstruct(Construct):
             runtime=_lambda.Runtime.PYTHON_3_11,
             handler="index.handler",
             code=_lambda.Code.from_asset(
-                "./functions/get_iiif_manifest",
+                "functions/get_iiif_manifest",
                 bundling={
                     "image": _lambda.Runtime.PYTHON_3_11.bundling_image,
                     "bundling_file_access": BundlingFileAccess.VOLUME_COPY,
@@ -95,7 +95,7 @@ class StepFunctionsConstruct(Construct):
             runtime=_lambda.Runtime.PYTHON_3_11,
             handler="index.handler",
             code=_lambda.Code.from_asset(
-                "./functions/ead",
+                "functions/ead",
                 bundling={
                     "image": _lambda.Runtime.PYTHON_3_11.bundling_image,
                     "bundling_file_access": BundlingFileAccess.VOLUME_COPY,
@@ -286,7 +286,7 @@ class StepFunctionsConstruct(Construct):
         definition = choice_state.afterwards().next(success)
 
         self.state_machine = sfn.StateMachine(
-            self, "OsdpStackSpinup", definition=definition, timeout=Duration.hours(12), role=step_functions_role
+            self, "TreetopStackSpinup", definition=definition, timeout=Duration.hours(12), role=step_functions_role
         )
 
         # Permissions are too broad for now
@@ -345,7 +345,7 @@ class StepFunctionsConstruct(Construct):
             runtime=_lambda.Runtime.PYTHON_3_10,
             handler="index.handler",
             environment=env_vars,
-            code=_lambda.Code.from_asset("./functions/step_function_trigger"),
+            code=_lambda.Code.from_asset("functions/step_function_trigger"),
             timeout=Duration.minutes(3),
             initial_policy=[
                 iam.PolicyStatement(

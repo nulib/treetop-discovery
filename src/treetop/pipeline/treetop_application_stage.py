@@ -1,10 +1,11 @@
 from aws_cdk import Stage
 from aws_cdk import aws_iam as iam
 from constructs import Construct
-from stacks.osdp_prototype_stack import OsdpPrototypeStack
+
+from treetop.stacks.treetop_stack import TreetopStack
 
 
-class OsdpApplicationStage(Stage):
+class TreetopApplicationStage(Stage):
     def __init__(self, scope: Construct, id: str, **kwargs):
         super().__init__(scope, id, **kwargs)
 
@@ -15,4 +16,4 @@ class OsdpApplicationStage(Stage):
             conditions={"StringLike": {"token.actions.githubusercontent.com:sub": "repo:nulib/osdp-prototype-ui:*"}},
         )
 
-        OsdpPrototypeStack(self, "OSDP-Prototype", ui_function_invoke_principal=principal)
+        TreetopStack(self, "Treetop", ui_function_invoke_principal=principal)

@@ -1,7 +1,8 @@
 import aws_cdk as core
 import aws_cdk.assertions as assertions
 import pytest
-from stacks.osdp_prototype_stack import OsdpPrototypeStack
+
+from treetop.stacks.treetop_stack import TreetopStack
 
 STACK_PREFIX = "alice"
 
@@ -19,7 +20,7 @@ def stack_and_template():
         "foundation_model_arn", "arn:aws:sagemaker:us-east-1:123456789012:model/bedrock-embedding-model"
     )
     app.node.set_context("aws:cdk:bundling-stacks", [])  # Disable bundling to speed up tests
-    stack = OsdpPrototypeStack(app, "alice-OSDP-Prototype", env={"account": "123456789012", "region": "us-east-1"})
+    stack = TreetopStack(app, "alice-Treetop", env={"account": "123456789012", "region": "us-east-1"})
     template = assertions.Template.from_stack(stack)
     return stack, template
 
@@ -29,7 +30,7 @@ def test_cognito_user_pool_created(stack_and_template):
     template.has_resource_properties(
         "AWS::Cognito::UserPool",
         {
-            "UserPoolName": f"{STACK_PREFIX}-OSDPUsers",
+            "UserPoolName": f"{STACK_PREFIX}-TreetopUsers",
             "AutoVerifiedAttributes": ["email"],
             "MfaConfiguration": "OFF",
             "Policies": {
@@ -52,7 +53,7 @@ def test_cognito_user_pool_client_created(stack_and_template):
         "AWS::Cognito::UserPoolClient",
         {
             "UserPoolId": assertions.Match.any_value(),
-            "ClientName": f"{STACK_PREFIX}-OSDPClient",
+            "ClientName": f"{STACK_PREFIX}-TreetopClient",
             "ExplicitAuthFlows": [
                 "ALLOW_USER_PASSWORD_AUTH",
                 "ALLOW_ADMIN_USER_PASSWORD_AUTH",
@@ -99,7 +100,7 @@ def test_api_gateway_created(stack_and_template):
     template.has_resource_properties(
         "AWS::ApiGateway::RestApi",
         {
-            "Name": "alice-OSDP-API",
+            "Name": "alice-Treetop-API",
         },
     )
 

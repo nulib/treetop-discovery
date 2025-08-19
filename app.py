@@ -4,8 +4,9 @@ import sys
 import tomllib
 
 import aws_cdk as cdk
-from pipeline.pipeline_stack import PipelineStack
-from stacks.osdp_prototype_stack import OsdpPrototypeStack
+
+from treetop.pipeline.pipeline_stack import PipelineStack
+from treetop.stacks.treetop_stack import TreetopStack
 
 # Initialize the CDK app which loads the built-in context (from cdk.json and CLI)
 app = cdk.App()
@@ -20,8 +21,9 @@ current_stack_prefix = cli_stack_prefix or env_stack_prefix
 # (For staging deployment, we get params from SSM/CLI)
 if current_stack_prefix != "staging":
     # Load TOML configuration from config.toml
-    # This file should be in the same directory as this script
-    config_file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config.toml")
+    # This file should be in the same directory as this script (repo root)
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    config_file_path = os.path.join(script_dir, "config.toml")
     print(f"Looking for config file at: {config_file_path}")
 
     try:
@@ -64,7 +66,7 @@ else:
                         "ecr",
                         {
                             "registry": ecr_registry or "public.ecr.aws",
-                            "repository": ecr_repository or "nulib-staging/osdp-iiif-fetcher",
+                            "repository": ecr_repository or "nulib-staging/treetop-iiif-fetcher",
                             "tag": ecr_tag or "latest",
                         },
                     )
@@ -120,9 +122,9 @@ if not stack_prefix:
 # Set the stack_prefix in context so constructs can access it without direct passing
 app.node.set_context("stack_prefix", stack_prefix)
 
-OsdpPrototypeStack(
+TreetopStack(
     app,
-    f"{stack_prefix}-OSDP-Prototype",
+    f"{stack_prefix}-Treetop",
     env=cdk.Environment(account=os.getenv("CDK_DEFAULT_ACCOUNT"), region=os.getenv("CDK_DEFAULT_REGION")),
     # Uncomment the next line to specialize this stack for the AWS Account
     # and Region that are implied by the current CLI configuration.
@@ -130,5 +132,9 @@ OsdpPrototypeStack(
     # For more information, see https://docs.aws.amazon.com/cdk/latest/guide/environments.html
 )
 
-PipelineStack(app, "OsdpPipelineStack", env=cdk.Environment(account="625046682746", region="us-east-1"))
+PipelineStack(
+    app,
+    "TreetopPipelineStack",
+    env=cdk.Environment(account=os.getenv("CDK_DEFAULT_ACCOUNT"), region=os.getenv("CDK_DEFAULT_REGION")),
+)
 app.synth()

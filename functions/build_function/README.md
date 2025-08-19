@@ -9,7 +9,7 @@ To most effectively make adjustments to this function, install the necessary dep
 If still in the root, change into this directory:
 
 ```bash
-cd ./osdp-prototype/build_function
+cd ./treetop/build_function
 ```
 
 And install the dependencies:

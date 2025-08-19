@@ -1,18 +1,18 @@
 [project]
-name = "osdp-prototype"
+name = "treetop-discovery"
 readme = "README.md"
 version = "0.1.0"
 requires-python = "==3.12.9"
 dependencies = [
     "aws-cdk-aws-amplify-alpha>=2.181.0a0",
     "aws-cdk-lib>=2.181.0",
-    "boto3>=1.37.1",
+    "boto3>=1.40.12",
     "constructs>=10.4.2",
 ]
 
 [dependency-groups]
 dev = ["pytest>=8.3.4", "ruff>=0.9.7"]
-iiif = ["boto3>=1.37.1", "loam-iiif>=0.1.6"]
+iiif = ["boto3>=1.40.12", "loam-iiif>=0.1.6"]
 
 [tool.ruff]
 # Exclude files/directories
@@ -28,3 +28,8 @@ select = [
     "I", # isort
     "B", # flake8-bugbear
 ]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = ["-q"]
+pythonpath = ["src"]

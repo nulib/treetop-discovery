@@ -30,9 +30,9 @@ class DatabaseConstruct(Construct):
         # Create security group for the Aurora cluster
         db_security_group = ec2.SecurityGroup(
             self,
-            "OsdpDatabaseSecurityGroup",
+            "TreetopDatabaseSecurityGroup",
             vpc=vpc,
-            description="Security group for OSDP Aurora PostgreSQL cluster",
+            description="Security group for Treetop Aurora PostgreSQL cluster",
             allow_all_outbound=False,
         )
 
@@ -48,7 +48,7 @@ class DatabaseConstruct(Construct):
         # Create database credentials in Secrets Manager
         self.db_credentials = secretsmanager.Secret(
             self,
-            "OsdpDBCredentials",
+            "TreetopDBCredentials",
             generate_secret_string=secretsmanager.SecretStringGenerator(
                 secret_string_template='{"username": "postgres"}',
                 generate_string_key="password",
@@ -59,7 +59,7 @@ class DatabaseConstruct(Construct):
         # Create Aurora Serverless v2 cluster
         self.db_cluster = rds.DatabaseCluster(
             self,
-            "OsdpKnowledgeBaseDB",
+            "TreetopKnowledgeBaseDB",
             engine=rds.DatabaseClusterEngine.aurora_postgres(version=rds.AuroraPostgresEngineVersion.VER_16_6),
             writer=rds.ClusterInstance.serverless_v2("Writer"),
             vpc=vpc,

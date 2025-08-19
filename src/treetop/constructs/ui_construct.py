@@ -13,7 +13,7 @@ from constructs import Construct
 
 class UIConstruct(Construct):
     """
-    Construct for the OSDP UI hosted on AWS Amplify.
+    Construct for the Treetop UI hosted on AWS Amplify.
 
     This construct creates an Amplify app and branch, and a Lambda function to build and deploy the UI.
 
@@ -59,7 +59,7 @@ class UIConstruct(Construct):
             hosted_zone = route53.HostedZone.from_lookup(
                 self, "hostedZone", domain_name="rdc-staging.library.northwestern.edu"
             )
-            domain = amplify_app.add_domain(f"osdp.{hosted_zone.zone_name}")
+            domain = amplify_app.add_domain(f"treetop.{hosted_zone.zone_name}")
             domain.map_root(self.amplify_branch)
             domain.map_sub_domain(self.amplify_branch, "www")
             domain.node.add_dependency(amplify_app)
@@ -67,7 +67,7 @@ class UIConstruct(Construct):
             CfnOutput(
                 self,
                 "StagingAppURL",
-                value=f"https://osdp.{hosted_zone.zone_name}",
+                value=f"https://treetop.{hosted_zone.zone_name}",
                 description="Custom domain URL for NUL staging environment",
             )
 
@@ -77,7 +77,7 @@ class UIConstruct(Construct):
             runtime=_lambda.Runtime.NODEJS_22_X,
             handler="index.handler",
             code=_lambda.Code.from_asset(
-                "./functions/build_function",
+                "functions/build_function",
                 bundling=BundlingOptions(
                     image=_lambda.Runtime.NODEJS_22_X.bundling_image,
                     bundling_file_access=BundlingFileAccess.VOLUME_COPY,
@@ -113,7 +113,7 @@ class UIConstruct(Construct):
             _lambda.LayerVersion.from_layer_version_arn(
                 self,
                 "GitLayer",
-                layer_version_arn="arn:aws:lambda:us-east-1:553035198032:layer:git-lambda2:8",
+                layer_version_arn=f"arn:aws:lambda:{stack.region}:553035198032:layer:git-lambda2:8",
             )
         )
 

@@ -36,13 +36,10 @@ jobs:
           echo PATH=$PATH >> $GITHUB_ENV
 
       - name: Run tests
-        working-directory: ./osdp
         run: pytest -vv tests/
 
       - name: Lint
-        working-directory: ./osdp
         run: ruff check .
 
       - name: Format check
-        working-directory: ./osdp
         run: ruff format --check .
