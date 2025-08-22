@@ -21,8 +21,32 @@ from constructs import Construct
 
 
 class DatabaseConstruct(Construct):
-    def __init__(self, scope: Construct, id: str, **kwargs) -> None:
+    def __init__(self, scope: Construct, id: str, db_config: dict = None, **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
+
+        # Set default database configuration
+        # Default password exclusion chars: avoids common connection string delimiters and escape sequences
+        # - Double quotes (") and single quotes ('): avoid SQL injection and string parsing issues
+        # - At symbol (@): commonly used in connection strings for username@host syntax
+        # - Forward slash (/): used in connection URLs and can cause parsing issues
+        # - Backslash (\): escape character that can cause issues in various contexts
+        default_db_config = {
+            "name": "treetop",
+            "credentials": {
+                "username": "postgres",
+                "password_exclude_chars": "\"'@/\\",
+            },
+        }
+
+        # Merge provided config with defaults (deep merge for nested dicts)
+        self.db_config = default_db_config.copy()
+        if db_config:
+            if "credentials" in db_config:
+                self.db_config["credentials"].update(db_config["credentials"])
+            # Merge any other top-level keys
+            for key, value in db_config.items():
+                if key != "credentials":
+                    self.db_config[key] = value
 
         # Use the default VPC
         vpc = ec2.Vpc.from_lookup(self, "DefaultVPC", is_default=True)
@@ -46,13 +70,16 @@ class DatabaseConstruct(Construct):
         )
 
         # Create database credentials in Secrets Manager
+        username = self.db_config["credentials"]["username"]
+        password_exclude_chars = self.db_config["credentials"]["password_exclude_chars"]
+
         self.db_credentials = secretsmanager.Secret(
             self,
             "TreetopDBCredentials",
             generate_secret_string=secretsmanager.SecretStringGenerator(
-                secret_string_template='{"username": "postgres"}',
+                secret_string_template=f'{{"username": "{username}"}}',
                 generate_string_key="password",
-                exclude_characters='"@/\\',
+                exclude_characters=password_exclude_chars,
             ),
         )
 
@@ -66,6 +93,7 @@ class DatabaseConstruct(Construct):
             vpc_subnets=ec2.SubnetSelection(subnet_type=ec2.SubnetType.PUBLIC),
             security_groups=[db_security_group],
             credentials=rds.Credentials.from_secret(self.db_credentials),
+            default_database_name=self.db_config["name"],
             removal_policy=RemovalPolicy.DESTROY,  # TODO Change this for production
             serverless_v2_min_capacity=0.5,
             serverless_v2_max_capacity=8,
@@ -81,7 +109,7 @@ class DatabaseConstruct(Construct):
                 action="executeStatement",
                 parameters={
                     "secretArn": self.db_credentials.secret_arn,
-                    "database": "postgres",
+                    "database": self.db_config["name"],
                     "resourceArn": self.db_cluster.cluster_arn,
                     # Split into separate statements for better error handling
                     "sql": """
@@ -109,7 +137,7 @@ class DatabaseConstruct(Construct):
                 action="executeStatement",
                 parameters={
                     "secretArn": self.db_credentials.secret_arn,
-                    "database": "postgres",
+                    "database": self.db_config["name"],
                     "resourceArn": self.db_cluster.cluster_arn,
                     "sql": "CREATE SCHEMA IF NOT EXISTS bedrock_integration;",
                 },
@@ -136,7 +164,7 @@ class DatabaseConstruct(Construct):
                 action="executeStatement",
                 parameters={
                     "secretArn": self.db_credentials.secret_arn,
-                    "database": "postgres",
+                    "database": self.db_config["name"],
                     "resourceArn": self.db_cluster.cluster_arn,
                     "sql": f"""
                                     DO $$ 
@@ -168,7 +196,7 @@ class DatabaseConstruct(Construct):
                 action="executeStatement",
                 parameters={
                     "secretArn": self.db_credentials.secret_arn,
-                    "database": "postgres",
+                    "database": self.db_config["name"],
                     "resourceArn": self.db_cluster.cluster_arn,
                     "sql": "GRANT ALL ON SCHEMA bedrock_integration TO bedrock_user;",
                 },
@@ -200,7 +228,7 @@ class DatabaseConstruct(Construct):
                 action="executeStatement",
                 parameters={
                     "secretArn": self.db_credentials.secret_arn,
-                    "database": "postgres",
+                    "database": self.db_config["name"],
                     "resourceArn": self.db_cluster.cluster_arn,
                     "sql": """
                         CREATE TABLE IF NOT EXISTS bedrock_integration.bedrock_knowledge_base (
@@ -232,7 +260,7 @@ class DatabaseConstruct(Construct):
                 action="executeStatement",
                 parameters={
                     "secretArn": self.db_credentials.secret_arn,
-                    "database": "postgres",
+                    "database": self.db_config["name"],
                     "resourceArn": self.db_cluster.cluster_arn,
                     "sql": """
                         CREATE INDEX IF NOT EXISTS embedding_idx ON bedrock_integration.bedrock_knowledge_base 
@@ -260,7 +288,7 @@ class DatabaseConstruct(Construct):
                 action="executeStatement",
                 parameters={
                     "secretArn": self.db_credentials.secret_arn,
-                    "database": "postgres",
+                    "database": self.db_config["name"],
                     "resourceArn": self.db_cluster.cluster_arn,
                     "sql": """
                         CREATE INDEX IF NOT EXISTS chunks_idx ON bedrock_integration.bedrock_knowledge_base 
@@ -292,3 +320,6 @@ class DatabaseConstruct(Construct):
         CfnOutput(self, "DatabaseEndpoint", value=self.db_cluster.cluster_endpoint.hostname)
         CfnOutput(self, "DatabasePort", value=str(self.db_cluster.cluster_endpoint.port))
         CfnOutput(self, "DatabaseSecretArn", value=self.db_credentials.secret_arn)
+        CfnOutput(self, "DatabaseName", value=self.db_config["name"])
+        CfnOutput(self, "DatabaseUsername", value=self.db_config["credentials"]["username"])
+        CfnOutput(self, "DatabasePasswordExcludeChars", value=self.db_config["credentials"]["password_exclude_chars"])

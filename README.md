@@ -96,6 +96,42 @@ project = "my-project"
 # Note: ECR section not required for EAD workflows
 ```
 
+#### Database Configuration (Optional)
+
+You can customize the database name and credentials for enhanced security:
+
+```toml
+# Database configuration (optional)
+[database]
+name = "treetop"                              # Default: "treetop" - Database name
+[database.credentials]
+username = "myapp_db_user"                    # Default: "postgres" - Database username
+# password_exclude_chars defaults to '"\'@/\' - characters excluded from auto-generated passwords
+```
+
+**Database Configuration Options:**
+- **Database Name**: Defaults to "treetop"
+- **Username**: Defaults to "postgres", can be customized for security
+- **Password**: Auto-generated and stored securely in AWS Secrets Manager
+
+**Database Name Requirements:**
+- Must start with a letter
+- Can only contain letters and numbers (no hyphens, underscores, spaces, or special characters)
+- 1-63 characters long
+- Examples: ✅ `treetop`, `myproject`, `treetopabc` | ❌ `tree-top`, `tree_top`, `my project`
+
+**Database Username Requirements:**
+- Must start with a letter
+- Can only contain letters, numbers, and underscores (no hyphens, spaces, or special characters)
+- 1-16 characters long
+- Examples: ✅ `myapp_user`, `treetop_bedrock_user` | ❌ `my-app-user`, `user@domain`
+
+**Security Benefits:**
+- Uses descriptive database name "treetop" instead of generic "postgres"
+- Uses service-specific usernames instead of generic "postgres"
+- AWS automatically generates secure passwords with configurable character exclusions
+- Passwords are stored in AWS Secrets Manager and never exposed in configuration
+
 **Required Configuration Changes:**
 - `stack_prefix`: Choose a unique name for your deployment (e.g., "my-treetop")
 - **Account ID**: Replace `123456789012` in the `foundation_model_arn` (inference profile) with your AWS account ID
@@ -241,6 +277,7 @@ After deployment completes check the bottom for relevant stack outputs (if you m
 - `ApiUrl`: Your API Gateway endpoint URL
 - `UserPoolId`: Cognito User Pool ID (needed for creating users)
 - `KnowledgeBaseId`: Bedrock Knowledge Base ID
+- `DatabaseName`: Database name (defaults to "treetop")
 
 > [!TIP]
 > Save the `UserPoolId` and `UserPoolIdWebsite URL` from outputs. You'll need the `UserPoolId` to create Cognito users in the next step. `Website URL` is your application URL which can be retrieved manually by following step 6 below.

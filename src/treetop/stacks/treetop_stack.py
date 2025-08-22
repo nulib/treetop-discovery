@@ -79,7 +79,8 @@ class TreetopStack(Stack):
             ecs_construct = EcsConstruct(self, "EcsConstruct", data_bucket=data_bucket, ecr_image=ecr_image_uri)
 
         # Database construct
-        database_construct = DatabaseConstruct(self, "DatabaseConstruct")
+        db_config = self.node.try_get_context("database")
+        database_construct = DatabaseConstruct(self, "DatabaseConstruct", db_config=db_config)
 
         # Knowledge Base construct
         knowledge_base_construct = KnowledgeBaseConstruct(
@@ -90,6 +91,7 @@ class TreetopStack(Stack):
             db_cluster=database_construct.db_cluster,
             db_credentials=database_construct.db_credentials,
             db_initialization=database_construct.db_init4_index,
+            db_config=db_config,
         )
 
         # Create the Amplify app first so we have the id
