@@ -22,9 +22,9 @@ project = "my-project"
 # ECR configuration (optional - uses defaults shown below)
 # Uncomment and modify the following section only if you need to override the default ECR settings
 # [ecr]
-# registry = "public.ecr.aws"                    # Default: "public.ecr.aws"
-# repository = "nulib-staging/osdp-iiif-fetcher" # Default: "nulib-staging/osdp-iiif-fetcher"
-# tag = "latest"                                 # Default: "latest"
+# registry = "public.ecr.aws"                      # Default: "public.ecr.aws"
+# repository = "nulib-staging/treetop-iiif-fetcher" # Default: "nulib-staging/treetop-iiif-fetcher"
+# tag = "latest"                                   # Default: "latest"
 
 # Database configuration (optional)
 # Uncomment and modify the following section only if you need to override the default database settings

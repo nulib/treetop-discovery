@@ -1,6 +1,6 @@
 # build_function
 
-A function triggered by a custom CloudFormation Event that build the OSDP UI from source.
+A function triggered by a custom CloudFormation Event that build the Treetop UI from source.
 
 ## development
 

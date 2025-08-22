@@ -110,7 +110,7 @@ username = "myapp_db_user"                    # Default: "postgres" - Database u
 ```
 
 **Database Configuration Options:**
-- **Database Name**: Defaults to "treetop" (was previously hardcoded as "postgres")
+- **Database Name**: Defaults to "treetop"
 - **Username**: Defaults to "postgres", can be customized for security
 - **Password**: Auto-generated and stored securely in AWS Secrets Manager
 
@@ -124,7 +124,7 @@ username = "myapp_db_user"                    # Default: "postgres" - Database u
 - Must start with a letter
 - Can only contain letters, numbers, and underscores (no hyphens, spaces, or special characters)
 - 1-16 characters long
-- Examples: ✅ `myapp_user`, `osdp_bedrock_user` | ❌ `my-app-user`, `user@domain`
+- Examples: ✅ `myapp_user`, `treetop_bedrock_user` | ❌ `my-app-user`, `user@domain`
 
 **Security Benefits:**
 - Uses descriptive database name "treetop" instead of generic "postgres"
