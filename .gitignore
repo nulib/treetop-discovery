@@ -8,3 +8,4 @@ node_modules/
 .vscode/
 .github/copilot-instructions.md
 config.toml
+cdk.context.json

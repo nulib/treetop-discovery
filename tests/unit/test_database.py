@@ -1,7 +1,8 @@
 import aws_cdk as core
 import aws_cdk.assertions as assertions
 import pytest
-from stacks.osdp_prototype_stack import OsdpPrototypeStack
+
+from treetop.stacks.treetop_stack import TreetopStack
 
 
 @pytest.fixture
@@ -17,7 +18,7 @@ def stack_and_template():
         "foundation_model_arn", "arn:aws:sagemaker:us-east-1:123456789012:model/bedrock-embedding-model"
     )
     app.node.set_context("aws:cdk:bundling-stacks", [])  # Disable bundling to speed up tests
-    stack = OsdpPrototypeStack(app, "alice-OSDP-Prototype", env={"account": "123456789012", "region": "us-east-1"})
+    stack = TreetopStack(app, "alice-Treetop", env={"account": "123456789012", "region": "us-east-1"})
     template = assertions.Template.from_stack(stack)
     return stack, template
 
@@ -40,7 +41,7 @@ def test_db_security_group_created(stack_and_template):
     template.has_resource_properties(
         "AWS::EC2::SecurityGroup",
         {
-            "GroupDescription": assertions.Match.string_like_regexp(".*OSDP.*PostgreSQL.*"),
+            "GroupDescription": assertions.Match.string_like_regexp(".*Treetop.*PostgreSQL.*"),
             "SecurityGroupIngress": [
                 {
                     "FromPort": 5432,

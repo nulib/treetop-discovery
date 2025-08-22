@@ -21,14 +21,14 @@ class KnowledgeBaseConstruct(Construct):
         super().__init__(scope, id, **kwargs)
 
         # Get stack_prefix from context
-        stack_prefix = self.node.try_get_context("stack_prefix")
+        stack_prefix = self.node.try_get_context("stack_prefix") or ""
 
         # Create IAM role for the Knowledge Base
         kb_role = iam.Role(
             self,
-            "OsdpBedrockKBRole",
+            "TreetopBedrockKBRole",
             assumed_by=iam.ServicePrincipal("bedrock.amazonaws.com"),
-            description="IAM role for OSDP Bedrock Knowledge Base",
+            description="IAM role for Treetop Bedrock Knowledge Base",
         )
 
         # Policy for S3 data source
@@ -72,8 +72,8 @@ class KnowledgeBaseConstruct(Construct):
         # Create the Knowledge Base
         self.knowledge_base = bedrock.CfnKnowledgeBase(
             self,
-            "OsdpBedrockKB",
-            name=f"{stack_prefix}-osdp-knowledge-base",
+            "TreetopBedrockKB",
+            name=f"{stack_prefix}-treetop-knowledge-base",
             role_arn=kb_role.role_arn,
             description="Knowledge base with S3 data source and Aurora PostgreSQL vector store",
             knowledge_base_configuration=bedrock.CfnKnowledgeBase.KnowledgeBaseConfigurationProperty(
@@ -106,9 +106,9 @@ class KnowledgeBaseConstruct(Construct):
                     bucket_arn=data_bucket.bucket_arn, inclusion_prefixes=["data/"]
                 ),
             ),
-            name="OsdpS3DataSource",
+            name="TreetopS3DataSource",
             knowledge_base_id=self.knowledge_base.attr_knowledge_base_id,
-            description="OSDP S3 Data Source",
+            description="Treetop S3 Data Source",
             vector_ingestion_configuration=bedrock.CfnDataSource.VectorIngestionConfigurationProperty(
                 chunking_configuration=bedrock.CfnDataSource.ChunkingConfigurationProperty(
                     chunking_strategy="FIXED_SIZE",

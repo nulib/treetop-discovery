@@ -36,7 +36,7 @@ jobs:
         env:
           REGISTRY: ${{ steps.login-ecr-public.outputs.registry }}
           REGISTRY_ALIAS: nulib-staging
-          REPOSITORY: osdp-iiif-fetcher
+          REPOSITORY: treetop-iiif-fetcher
           IMAGE_TAG: latest
         run: |
           docker build -t $REGISTRY/$REGISTRY_ALIAS/$REPOSITORY:$IMAGE_TAG -f iiif/Dockerfile .

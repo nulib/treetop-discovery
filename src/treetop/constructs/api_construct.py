@@ -31,18 +31,20 @@ class ApiConstruct(Construct):
         model_arn: str,
         amplify_app: amplify.App,
         allowed_origins: List[str],
+        knowledge_base_id: str = None,
+        data_source_id: str = None,
         **kwargs,
     ) -> None:
         super().__init__(scope, id, **kwargs)
 
         # Get stack_prefix from context
-        stack_prefix = self.node.try_get_context("stack_prefix")
+        stack_prefix = self.node.try_get_context("stack_prefix") or ""
 
         # Create a Cognito User Pool
         self.user_pool = cognito.UserPool(
             self,
-            "OSDPUsers",
-            user_pool_name=f"{stack_prefix}-OSDPUsers",
+            "TreetopUsers",
+            user_pool_name=f"{stack_prefix}-TreetopUsers",
             self_sign_up_enabled=False,  # Only admin can create users
             auto_verify={"email": True},
             password_policy=cognito.PasswordPolicy(
@@ -55,8 +57,8 @@ class ApiConstruct(Construct):
 
         # Create a User Pool Client
         self.user_pool_client = self.user_pool.add_client(
-            "OSDPClient",
-            user_pool_client_name=f"{stack_prefix}-OSDPClient",
+            "TreetopClient",
+            user_pool_client_name=f"{stack_prefix}-TreetopClient",
             auth_flows={"user_password": True, "admin_user_password": True, "user_srp": True},
             prevent_user_existence_errors=True,
             enable_token_revocation=True,
@@ -77,7 +79,7 @@ class ApiConstruct(Construct):
             "ChatFunction",
             runtime=_lambda.Runtime.PYTHON_3_11,
             handler="index.handler",
-            code=_lambda.Code.from_asset("./functions/chat"),
+            code=_lambda.Code.from_asset("src/treetop/functions/chat"),
             timeout=Duration.minutes(2),
             memory_size=1024,
             environment={"KNOWLEDGE_BASE_ID": knowledge_base.attr_knowledge_base_id, "MODEL_ARN": model_arn},
@@ -107,14 +109,44 @@ class ApiConstruct(Construct):
             )
         )
 
+        # Create status function for admin users
+        status_function = _lambda.Function(
+            self,
+            "StatusFunction",
+            runtime=_lambda.Runtime.PYTHON_3_11,
+            handler="index.handler",
+            code=_lambda.Code.from_asset("src/treetop/functions/status"),
+            timeout=Duration.minutes(1),
+            memory_size=512,
+            environment={
+                "KNOWLEDGE_BASE_ID": knowledge_base_id or knowledge_base.attr_knowledge_base_id,
+                "DATA_SOURCE_ID": data_source_id or "",
+            },
+        )
+
+        status_function.node.add_dependency(knowledge_base)
+
+        # Add Bedrock permissions for status function
+        status_function.add_to_role_policy(
+            iam.PolicyStatement(
+                actions=[
+                    "bedrock:ListIngestionJobs",
+                    "bedrock:GetIngestionJob",
+                ],
+                resources=[
+                    f"arn:aws:bedrock:{self.region}:{self.account}:knowledge-base/*",
+                ],
+            )
+        )
+
         # Create Cognito Authorizer
         auth = apigw.CognitoUserPoolsAuthorizer(self, "ChatAuthorizer", cognito_user_pools=[self.user_pool])
 
         # Create API Gateway
         self.api = apigw.RestApi(
             self,
-            "OSDPApi",
-            rest_api_name=f"{stack_prefix}-OSDP-API",
+            "TreetopApi",
+            rest_api_name=f"{stack_prefix}-Treetop-API",
             default_cors_preflight_options=apigw.CorsOptions(
                 allow_headers=[
                     "Content-Type",
@@ -124,7 +156,7 @@ class ApiConstruct(Construct):
                     "X-Amz-Security-Token",
                 ],
                 status_code=200,
-                allow_methods=["OPTIONS", "POST"],
+                allow_methods=["OPTIONS", "POST", "GET"],
                 allow_origins=["*"],
             ),
             endpoint_configuration=apigw.EndpointConfiguration(types=[apigw.EndpointType.REGIONAL]),
@@ -135,6 +167,13 @@ class ApiConstruct(Construct):
         chat_resource = self.api.root.add_resource("chat")
         chat_resource.add_method(
             "POST", chat_integration, authorizer=auth, authorization_type=apigw.AuthorizationType.COGNITO
+        )
+
+        # Add /status route with Cognito authorization (admin group checked in function)
+        status_integration = apigw.LambdaIntegration(status_function)
+        status_resource = self.api.root.add_resource("status")
+        status_resource.add_method(
+            "GET", status_integration, authorizer=auth, authorization_type=apigw.AuthorizationType.COGNITO
         )
 
         self.api.node.add_dependency(self.user_pool)

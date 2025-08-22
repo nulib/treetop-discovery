@@ -12,15 +12,16 @@ from aws_cdk import (
     aws_s3 as s3,
 )
 from constructs import Construct
-from constructs.api_construct import ApiConstruct
-from constructs.db_construct import DatabaseConstruct
-from constructs.ecs_task_construct import EcsConstruct
-from constructs.knowledge_base_construct import KnowledgeBaseConstruct
-from constructs.step_functions_construct import StepFunctionsConstruct
-from constructs.ui_construct import UIConstruct
+
+from treetop.constructs.api_construct import ApiConstruct
+from treetop.constructs.db_construct import DatabaseConstruct
+from treetop.constructs.ecs_task_construct import EcsConstruct
+from treetop.constructs.knowledge_base_construct import KnowledgeBaseConstruct
+from treetop.constructs.step_functions_construct import StepFunctionsConstruct
+from treetop.constructs.ui_construct import UIConstruct
 
 
-class OsdpPrototypeStack(Stack):
+class TreetopStack(Stack):
     def __init__(
         self,
         scope: Construct,
@@ -70,7 +71,7 @@ class OsdpPrototypeStack(Stack):
                 # Use default ECR configuration
                 ecr_config = {
                     "registry": "public.ecr.aws",
-                    "repository": "nulib-staging/osdp-iiif-fetcher",
+                    "repository": "nulib-staging/treetop-iiif-fetcher",
                     "tag": "latest",
                 }
 
@@ -115,6 +116,8 @@ class OsdpPrototypeStack(Stack):
             model_arn=self.node.try_get_context("foundation_model_arn"),
             allowed_origins=[ui_domain, "localhost:3000"],  # TODO change when custom domain?
             amplify_app=amplify_app,
+            knowledge_base_id=knowledge_base_construct.knowledge_base_id,
+            data_source_id=knowledge_base_construct.data_source_id,
         )
 
         # Create the UI
