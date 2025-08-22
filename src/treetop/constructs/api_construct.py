@@ -79,7 +79,7 @@ class ApiConstruct(Construct):
             "ChatFunction",
             runtime=_lambda.Runtime.PYTHON_3_11,
             handler="index.handler",
-            code=_lambda.Code.from_asset("functions/chat"),
+            code=_lambda.Code.from_asset("src/treetop/functions/chat"),
             timeout=Duration.minutes(2),
             memory_size=1024,
             environment={"KNOWLEDGE_BASE_ID": knowledge_base.attr_knowledge_base_id, "MODEL_ARN": model_arn},
@@ -115,7 +115,7 @@ class ApiConstruct(Construct):
             "StatusFunction",
             runtime=_lambda.Runtime.PYTHON_3_11,
             handler="index.handler",
-            code=_lambda.Code.from_asset("functions/status"),
+            code=_lambda.Code.from_asset("src/treetop/functions/status"),
             timeout=Duration.minutes(1),
             memory_size=512,
             environment={

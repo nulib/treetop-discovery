@@ -73,7 +73,7 @@ class StepFunctionsConstruct(Construct):
             runtime=_lambda.Runtime.PYTHON_3_11,
             handler="index.handler",
             code=_lambda.Code.from_asset(
-                "functions/get_iiif_manifest",
+                "src/treetop/functions/get_iiif_manifest",
                 bundling={
                     "image": _lambda.Runtime.PYTHON_3_11.bundling_image,
                     "bundling_file_access": BundlingFileAccess.VOLUME_COPY,
@@ -95,7 +95,7 @@ class StepFunctionsConstruct(Construct):
             runtime=_lambda.Runtime.PYTHON_3_11,
             handler="index.handler",
             code=_lambda.Code.from_asset(
-                "functions/ead",
+                "src/treetop/functions/ead",
                 bundling={
                     "image": _lambda.Runtime.PYTHON_3_11.bundling_image,
                     "bundling_file_access": BundlingFileAccess.VOLUME_COPY,
@@ -345,7 +345,7 @@ class StepFunctionsConstruct(Construct):
             runtime=_lambda.Runtime.PYTHON_3_10,
             handler="index.handler",
             environment=env_vars,
-            code=_lambda.Code.from_asset("functions/step_function_trigger"),
+            code=_lambda.Code.from_asset("src/treetop/functions/step_function_trigger"),
             timeout=Duration.minutes(3),
             initial_policy=[
                 iam.PolicyStatement(

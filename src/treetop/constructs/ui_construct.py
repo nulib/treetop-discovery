@@ -77,7 +77,7 @@ class UIConstruct(Construct):
             runtime=_lambda.Runtime.NODEJS_22_X,
             handler="index.handler",
             code=_lambda.Code.from_asset(
-                "functions/build_function",
+                "src/treetop/functions/build_function",
                 bundling=BundlingOptions(
                     image=_lambda.Runtime.NODEJS_22_X.bundling_image,
                     bundling_file_access=BundlingFileAccess.VOLUME_COPY,

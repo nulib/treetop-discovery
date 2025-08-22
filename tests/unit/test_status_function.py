@@ -32,7 +32,7 @@ def status_mod(monkeypatch):
     monkeypatch.setenv("DATA_SOURCE_ID", "test-ds-id")
     import importlib
 
-    mod = importlib.import_module("functions.status.index")
+    mod = importlib.import_module("src.treetop.functions.status.index")
     # Ensure a clean import state in case of module cache from other tests
     mod = importlib.reload(mod)
     return mod
@@ -47,7 +47,7 @@ def status_mod_region_only(monkeypatch):
     monkeypatch.delenv("DATA_SOURCE_ID", raising=False)
     import importlib
 
-    mod = importlib.import_module("functions.status.index")
+    mod = importlib.import_module("src.treetop.functions.status.index")
     mod = importlib.reload(mod)
     return mod
 
@@ -130,7 +130,7 @@ class TestAdminChecking:
 class TestIngestionJobsRetrieval:
     """Test Bedrock ingestion jobs retrieval."""
 
-    @patch("functions.status.index.bedrock_agent_client")
+    @patch("src.treetop.functions.status.index.bedrock_agent_client")
     def test_get_ingestion_jobs_status_success(self, mock_bedrock_client, status_mod):
         """Test successful retrieval of ingestion jobs."""
         mock_bedrock_client.list_ingestion_jobs.return_value = {
@@ -162,7 +162,7 @@ class TestIngestionJobsRetrieval:
         assert jobs[1]["ingestionJobId"] == "job-2"
         assert jobs[1]["status"] == "IN_PROGRESS"
 
-    @patch("functions.status.index.bedrock_agent_client")
+    @patch("src.treetop.functions.status.index.bedrock_agent_client")
     def test_get_ingestion_jobs_status_error(self, mock_bedrock_client, status_mod):
         """Test error handling in ingestion jobs retrieval."""
         mock_bedrock_client.list_ingestion_jobs.side_effect = Exception("Bedrock error")
@@ -178,7 +178,7 @@ class TestStatusHandler:
     def test_status_handler_admin(self, status_mod):
         """Test the handler with admin user."""
         # Patch the helper function used by the handler
-        with patch("functions.status.index.get_ingestion_jobs_status") as mock_get_jobs:
+        with patch("src.treetop.functions.status.index.get_ingestion_jobs_status") as mock_get_jobs:
             mock_get_jobs.return_value = [
                 {
                     "ingestionJobId": "test-job-1",
