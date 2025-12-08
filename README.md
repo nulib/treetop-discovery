@@ -247,7 +247,7 @@ cdk ls
 # Output will show: my-treetop-Treetop
 
 # Deploy the stack (add `--require-approval never` to skip manual approval)
-cdk deploy my-treetop-Treetop
+cdk deploy 
 ```
 
 > [!NOTE]
@@ -547,7 +547,7 @@ uv sync --all-groups
 ## Northwestern University Development
 
 > [!NOTE] 
-> This section is specific to Northwestern University developers and staging environments.
+> This section is specific to Northwestern University developers environments.
 
 ### NU Development Environment
 
@@ -572,14 +572,6 @@ Follow the main [Quick Start](#quick-start-for-simple-deployment) steps 1-2 for 
 
 **Configuration Notes:**
 For NU developers, the `stack_prefix` is automatically set using the `DEV_PREFIX` environment variable in AWS, so it can be omitted from `config.toml`.
-
-### NU Staging Pipeline
-
-The project includes a CI/CD pipeline for staging deployments:
-
-- **Pipeline Stack**: `TreetopPipelineStack` 
-- **Staging Stack**: `TreetopPipelineStack/staging/Treetop`
-- **GitHub Integration**: Pipeline sources from GitHub with Secrets Manager authentication
 
 ### ECR Repository
 

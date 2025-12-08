@@ -5,73 +5,33 @@ import tomllib
 
 import aws_cdk as cdk
 
-from treetop.pipeline.pipeline_stack import PipelineStack
 from treetop.stacks.treetop_stack import TreetopStack
 
 # Initialize the CDK app which loads the built-in context (from cdk.json and CLI)
 app = cdk.App()
 
-# Check if we're running in pipeline (with staging prefix)
 # First try to get stack_prefix from CLI context or environment
 cli_stack_prefix = app.node.try_get_context("stack_prefix")
 env_stack_prefix = os.environ.get("DEV_PREFIX")
 current_stack_prefix = cli_stack_prefix or env_stack_prefix
 
-# Load TOML configuration only if we're NOT in the pipeline deployment
-# (For staging deployment, we get params from SSM/CLI)
-if current_stack_prefix != "staging":
-    # Load TOML configuration from config.toml
-    # This file should be in the same directory as this script (repo root)
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    config_file_path = os.path.join(script_dir, "config.toml")
-    print(f"Looking for config file at: {config_file_path}")
+# Load TOML configuration from config.toml
+# This file should be in the same directory as this script (repo root)
+script_dir = os.path.dirname(os.path.abspath(__file__))
+config_file_path = os.path.join(script_dir, "config.toml")
+print(f"Looking for config file at: {config_file_path}")
 
-    try:
-        with open(config_file_path, "rb") as f:
-            config = tomllib.load(f)
+try:
+    with open(config_file_path, "rb") as f:
+        config = tomllib.load(f)
 
-            # Add config values to context
-            for key, value in config.items():
-                app.node.set_context(key, value)
-    except FileNotFoundError:
-        sys.exit(f"Error: Config file '{config_file_path}' not found.")
-    except tomllib.TOMLDecodeError:
-        sys.exit(f"Error: Config file '{config_file_path}' contains invalid TOML.")
-else:
-    print("Detected 'staging' deployment - parameters come from SSM/CLI")
-    # Manually construct the 'data' dictionary from flat CLI context if needed
-    data_context = app.node.try_get_context("data")
-    ecr_context = app.node.try_get_context("ecr")
-    if data_context is None or not isinstance(data_context, dict):
-        print("Constructing 'data' context from individual CLI parameters...")
-        data_type_cli = app.node.try_get_context("data.type")
-        if data_type_cli:
-            constructed_data = {"type": data_type_cli}
-            if data_type_cli == "iiif":
-                constructed_data["collection_url"] = app.node.try_get_context("data.collection_url")
-            elif data_type_cli == "ead":
-                constructed_data["s3"] = {
-                    "bucket": app.node.try_get_context("data.s3.bucket"),
-                    "prefix": app.node.try_get_context("data.s3.prefix"),
-                }
-            app.node.set_context("data", constructed_data)
-            if ecr_context is None:
-                # Construct ECR context from CLI parameters if provided, otherwise defaults will be used
-                ecr_registry = app.node.try_get_context("ecr.registry")
-                ecr_repository = app.node.try_get_context("ecr.repository")
-                ecr_tag = app.node.try_get_context("ecr.tag")
-
-                if ecr_registry or ecr_repository or ecr_tag:
-                    app.node.set_context(
-                        "ecr",
-                        {
-                            "registry": ecr_registry or "public.ecr.aws",
-                            "repository": ecr_repository or "nulib-staging/treetop-iiif-fetcher",
-                            "tag": ecr_tag or "latest",
-                        },
-                    )
-        else:
-            print("Warning: 'data.type' not found in CLI context.")
+        # Add config values to context
+        for key, value in config.items():
+            app.node.set_context(key, value)
+except FileNotFoundError:
+    sys.exit(f"Error: Config file '{config_file_path}' not found.")
+except tomllib.TOMLDecodeError:
+    sys.exit(f"Error: Config file '{config_file_path}' contains invalid TOML.")
 
 # All the required context keys
 required_context = ["embedding_model_arn", "foundation_model_arn", "data"]
@@ -112,11 +72,7 @@ stack_prefix = current_stack_prefix
 
 if not stack_prefix:
     print("No stack_prefix found in CDK context or environment. Exiting.")
-    # Only mention config.toml if we're not in staging deployment
-    if current_stack_prefix != "staging":
-        print("Please set stack prefix in the config.toml file.")
-    else:
-        print("Please provide stack_prefix via SSM.")
+    print("Please set stack prefix in the config.toml file.")
     exit(1)
 
 # Set the stack_prefix in context so constructs can access it without direct passing
@@ -130,11 +86,5 @@ TreetopStack(
     # and Region that are implied by the current CLI configuration.
     # env=cdk.Environment(account='123456789012', region='us-east-1'),
     # For more information, see https://docs.aws.amazon.com/cdk/latest/guide/environments.html
-)
-
-PipelineStack(
-    app,
-    "TreetopPipelineStack",
-    env=cdk.Environment(account=os.getenv("CDK_DEFAULT_ACCOUNT"), region=os.getenv("CDK_DEFAULT_REGION")),
 )
 app.synth()
