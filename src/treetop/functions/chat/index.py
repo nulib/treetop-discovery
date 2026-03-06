@@ -44,7 +44,6 @@ def handler(event, _context):
                         "textInferenceConfig": {
                             "maxTokens": 500,
                             "temperature": 0.7,
-                            "topP": 0.9,
                         }
                     },
                 },
